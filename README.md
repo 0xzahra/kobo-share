@@ -1,6 +1,6 @@
-# 🪙 Kobo Share — Own am small small
+# 🪙 Kobo Share: own am small small
 
-A practice app: own fractional "slots" of everyday Nigerian businesses (illustrative examples) using **₦500,000 free practice credits — not real money**. A game for learning how owning a piece of a business works. All businesses are fictional examples. Simulated daily practice earnings (including bad days), fluctuating slot valuations, weekly challenge, share card and leaderboard. All data lives in your browser's localStorage.
+A practice app: own practice "shares" of everyday Nigerian small businesses (fictional examples) using **₦500,000 free practice credits, not real money**. A game for learning how owning a piece of a business works. All businesses are fictional examples. Simulated daily practice scores (including bad days), fluctuating share values, weekly challenge, share card and leaderboard. All data lives in your browser's localStorage.
 
 Live: https://0xzahra.github.io/kobo-share/
 

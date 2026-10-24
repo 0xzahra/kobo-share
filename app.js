@@ -1,5 +1,5 @@
 'use strict';
-// All money is integer kobo (₦1 = 100 kobo). Practice credits only — not real money.
+// All money is integer kobo (₦1 = 100 kobo). Practice credits only, not real money.
 const N = n => n * 100; // naira -> kobo
 const START = N(500000);
 const STATES=['Abia','Adamawa','Akwa Ibom','Anambra','Bauchi','Bayelsa','Benue','Borno','Cross River','Delta','Ebonyi','Edo','Ekiti','Enugu','FCT Abuja','Gombe','Imo','Jigawa','Kaduna','Kano','Katsina','Kebbi','Kogi','Kwara','Lagos','Nasarawa','Niger','Ogun','Ondo','Osun','Oyo','Plateau','Rivers','Sokoto','Taraba','Yobe','Zamfara']; // 36 states + FCT
@@ -70,8 +70,10 @@ function value(b, day){
 let S = load();
 // Source tracking: ?src= or utm_source, remembered locally (first touch kept, latest used for new entries)
 const QS=new URLSearchParams(location.search);
-const SRC=(QS.get('src')||QS.get('utm_source')||S.src||'direct').toLowerCase().replace(/[^a-z0-9_.-]/g,'').slice(0,40)||'direct';
+let LS_SRC=null;try{LS_SRC=localStorage.getItem('koboShare.src')}catch(e){}
+const SRC=(QS.get('src')||QS.get('utm_source')||LS_SRC||S.src||'direct').toLowerCase().replace(/[^a-z0-9_.-]/g,'').slice(0,40)||'direct';
 if(!S.src||QS.get('src')||QS.get('utm_source')) S.src=SRC;
+try{if(QS.get('src')||QS.get('utm_source')||!LS_SRC)localStorage.setItem('koboShare.src',SRC)}catch(e){} // saved before any sign-in redirect
 function fresh(){return {v:4,src:null,wlList:[],ch:null,cash:START,lots:[],hist:[],last:today(),biz:[],wl:null,created:today(),dep:0,wd:0,wallet:0}}
 function kindOf(t){return /^Bought/.test(t)?'buy':/^Sold/.test(t)?'sell':/^(Deposit|Added)/.test(t)?'dep':/^(Withdraw|Cash out|Moved to)/.test(t)?'wd':/^Retired/.test(t)?'sell':'pay'}
 function migrate(s){
@@ -134,7 +136,7 @@ function render(){
   $('#week').innerHTML=[6,5,4,3,2,1,0].map(i=>`<i class="${c.includes(t-i)?'y':''} ${i===0?'t':''}"></i>`).join('');
   const p=pending(), btn=$('#collect'), lbl=btn.querySelector('.lbl');
   if(p.n<=0){btn.disabled=true;lbl.textContent='Collected for today';$('#collectNote').textContent='Next Collect unlocks tomorrow (Lagos time). Patience na virtue.';}
-  else if(!S.lots.length){btn.disabled=true;lbl.textContent='Buy slots to start playing';$('#collectNote').textContent='Slots you buy today start scoring from tomorrow.';}
+  else if(!S.lots.length){btn.disabled=true;lbl.textContent='Own shares to start playing';$('#collectNote').textContent='Shares you own today start scoring from tomorrow.';}
   else{btn.disabled=false;lbl.textContent=p.n>1?`Collect ${p.n} days`:'Collect';$('#collectNote').textContent='Simulated for learning. Results vary, nothing is guaranteed.';}
   renderMarket(); renderPort(); renderAcct(); renderHist(); renderChallenge();
 }
@@ -150,32 +152,32 @@ function renderMarket(){
 function detailSheet(b){
   const t=today(), v=value(b,t), taken=soldOut(b)+held(b.id), pct=Math.min(100,Math.round(taken*100/b.slots)), h=held(b.id), c=chState(), picked=!!c.picks.find(p=>p.id===b.id);
   sheet(`<div class="row"><div class="av">${ini(b.name)}</div><div><h2>${esc(b.name)}<span class="tag">example</span></h2><p class="tiny muted" style="margin:0">${esc(b.area)}, ${esc(b.state)} · ${esc(b.cat)}</p></div></div>
-  <p class="pbig">${fmt(v)}${PT} <span class="muted">per slot today</span></p>
-  <div class="kv"><div><small>daily/slot*</small><b>${fmt(b.min)}–${fmt(b.max).slice(1)}</b></div><div><small>bad-day</small><b>~${Math.round(b.bad*100)}%</b></div><div><small>you own</small><b>${h}</b></div></div>
-  <p class="tiny muted mono">${taken}/${b.slots} slots taken (${pct}%) · *simulated, not guaranteed</p>
-  <div class="row" style="margin-top:14px">${h?`<button class="btn ghost" data-sell="${b.id}">Sell</button>`:''}<button class="btn ghost" data-pick="${b.id}" ${picked||c.picks.length>=3?'disabled':''}>${picked?'Picked':'Pick for challenge'}</button><button class="btn" style="flex:1" data-buy="${b.id}" ${taken>=b.slots?'disabled':''}>${taken>=b.slots?'Sold out':'Buy slots'}</button></div>`);
+  <p class="pbig">${fmt(v)}${PT} <span class="muted">per share today</span></p>
+  <div class="kv"><div><small>daily/share*</small><b>${fmt(b.min)}–${fmt(b.max).slice(1)}</b></div><div><small>bad-day</small><b>~${Math.round(b.bad*100)}%</b></div><div><small>you own</small><b>${h}</b></div></div>
+  <p class="tiny muted mono">${taken}/${b.slots} shares taken (${pct}%) · *simulated, not guaranteed</p>
+  <div class="row" style="margin-top:14px">${h?`<button class="btn ghost" data-sell="${b.id}">Sell</button>`:''}<button class="btn ghost" data-pick="${b.id}" ${picked||c.picks.length>=3?'disabled':''}>${picked?'Picked':'Pick for challenge'}</button><button class="btn" style="flex:1" data-buy="${b.id}" ${taken>=b.slots?'disabled':''}>${taken>=b.slots?'Sold out':'Own shares'}</button></div>`);
   $('#modal').onclick=e=>{if(e.target===$('#modal'))closeSheet()};
 }
 const empty = (m) => `<div class="card empty"><div class="ring"></div>${m}</div>`;
 function renderPort(){
   const ids=[...new Set(S.lots.map(l=>l.id))];
-  if(!ids.length){$('#port').innerHTML=empty('No slots yet.<br>Pick one from the Market wey sweet you.');return}
+  if(!ids.length){$('#port').innerHTML=empty('No shares yet.<br>Pick one from the Market wey sweet you.');return}
   const t=today();
   $('#port').innerHTML='<div class="list">'+ids.map(id=>{const b=BYID[id], q=held(id), cost=costBasis(id), v=q*value(b,t);
-    return `<button class="li" data-detail="${id}"><div class="av">${ini(b.name)}</div><div class="nm"><b>${esc(b.name)}</b><small>${q} slot${q>1?'s':''} · cost ${fmt(cost)}</small></div><div class="pr"><b>${fmt(v)}</b><small class="${v>=cost?'up':'down'} mono">${pc(v-cost,cost)}</small></div></button>`}).join('')+
+    return `<button class="li" data-detail="${id}"><div class="av">${ini(b.name)}</div><div class="nm"><b>${esc(b.name)}</b><small>${q} share${q>1?'s':''} · cost ${fmt(cost)}</small></div><div class="pr"><b>${fmt(v)}</b><small class="${v>=cost?'up':'down'} mono">${pc(v-cost,cost)}</small></div></button>`}).join('')+
     `</div><p class="tiny muted">Total holdings: <b>${fmt(holdingsValue())}${PT}</b> · valuations move daily.</p>`;
 }
-const pc=(a,b)=>b?(a>=0?'+':'')+(a*100/b).toFixed(2)+'%':'—';
-const KL={dep:'Added',wd:'To practice wallet',buy:'Buy',sell:'Sell',pay:'Practice score'};
+const pc=(a,b)=>b?(a>=0?'+':'')+(a*100/b).toFixed(2)+'%':'-';
+const KL={dep:'Added',wd:'Collected',buy:'Buy',sell:'Sell',pay:'Practice score'};
 function renderAcct(){
   const p=pnl(), cls=p.total>=0?'up':'down', sg=x=>(x>=0?'+':'')+fmt(x);
   $('#pnl').innerHTML=`<div class="pbig ${cls}">${sg(p.total)}${PT} <span>${pc(p.total,p.contrib)}</span></div>
    <div class="kv"><div><small>realised</small><b class="${p.real>=0?'up':'down'}">${sg(p.real)}</b></div><div><small>unrealised</small><b class="${p.unreal>=0?'up':'down'}">${sg(p.unreal)}</b></div><div><small>holdings</small><b>${fmt(holdingsValue())}${PT}</b></div></div>
    <div class="kv"><div><small>practice credits</small><b>${fmt(S.cash)}${PT}</b></div><div><small>Practice wallet</small><b>${fmt(S.wallet)}${PT}</b></div><div><small>added practice credits</small><b>${fmt(S.dep)}${PT}</b></div></div>
-   <p class="tiny muted">P&amp;L = (credits + slots value + Practice wallet) − (₦500,000 starting credits + added practice credits). Realised = closed sells and collected practice scores; unrealised = open slots at today's valuation.</p>`;
+   <p class="tiny muted">Practice score = (credits + shares value + Practice wallet) − (₦500,000 starting credits + added practice credits). Realised = closed sells and collected practice scores; unrealised = open shares at today's practice value.</p>`;
   const ids=[...new Set(S.lots.map(l=>l.id))];
-  $('#pnlHold').innerHTML=ids.length?'<table><tr><th>Holding</th><th>Cost</th><th>Value</th><th>P&amp;L</th></tr>'+ids.map(id=>{const c=costBasis(id),v=held(id)*value(BYID[id],today());
-    return `<tr><td>${esc(BYID[id].name)}</td><td>${fmt(c)}${PT}</td><td>${fmt(v)}${PT}</td><td class="${v>=c?'up':'down'}">${v>=c?'+':''}${fmt(v-c)} <span class="tiny">${pc(v-c,c)}</span></td></tr>`}).join('')+'</table>':'<p class="tiny muted">No open holdings, so no unrealised P&amp;L.</p>';
+  $('#pnlHold').innerHTML=ids.length?'<table><tr><th>Holding</th><th>Cost</th><th>Value</th><th>Score</th></tr>'+ids.map(id=>{const c=costBasis(id),v=held(id)*value(BYID[id],today());
+    return `<tr><td>${esc(BYID[id].name)}</td><td>${fmt(c)}${PT}</td><td>${fmt(v)}${PT}</td><td class="${v>=c?'up':'down'}">${v>=c?'+':''}${fmt(v-c)} <span class="tiny">${pc(v-c,c)}</span></td></tr>`}).join('')+'</table>':'<p class="tiny muted">No open holdings, so no unrealised practice score.</p>';
 }
 function renderHist(){
   const f=$('#hFilter').value, rows=S.hist.filter(h=>!f||(h.k||kindOf(h.t))===f);
@@ -187,12 +189,12 @@ function sheet(html){track.lastSheet=Date.now();const m=$('#modal');m.innerHTML=
 function closeSheet(){$('#modal').hidden=true}
 function qtySheet(b,mode){
   const v=value(b,today()), max= mode==='buy' ? Math.min(Math.floor(S.cash/v), b.slots-soldOut(b)-held(b.id)) : held(b.id);
-  if(max<1){toast(mode==='buy'?'Your practice credits no reach o':'You have no slots to sell');return}
-  sheet(`<h2>${mode==='buy'?'Buy':'Sell'} slots</h2><p class="muted">${esc(b.name)} · ${fmt(v)} per slot today</p>
+  if(max<1){toast(mode==='buy'?'Your practice credits no reach o':'You have no shares to sell');return}
+  sheet(`<h2>${mode==='buy'?'Own':'Sell'} shares</h2><p class="muted">${esc(b.name)} · ${fmt(v)} per share today</p>
   <div class="qty"><button data-q="-1">−</button><input id="q" type="number" min="1" max="${max}" value="1" inputmode="numeric"><button data-q="1">+</button></div>
   <p>Total: <b id="tot">${fmt(v)}</b>${PT} <span class="tiny muted">(practice credits, max ${max})</span></p>
   ${mode==='buy'?'<p class="tiny muted">Practice scores vary and nothing is guaranteed. Bad days can happen. Starts scoring tomorrow.</p>':''}
-  <div class="row"><button class="btn ghost" data-close>Cancel</button><button class="btn" style="flex:1" data-confirm>${mode==='buy'?'Confirm buy':'Confirm sell'}</button></div>`);
+  <div class="row"><button class="btn ghost" data-close>Cancel</button><button class="btn" style="flex:1" data-confirm>${mode==='buy'?'Confirm':'Confirm sell'}</button></div>`);
   const q=$('#q'), clamp=()=>{let n=parseInt(q.value,10);if(!Number.isInteger(n)||n<1)n=1;if(n>max)n=max;q.value=n;$('#tot').textContent=fmt(n*v);return n};
   q.oninput=clamp;
   $('#modal').onclick=e=>{
@@ -202,7 +204,7 @@ function qtySheet(b,mode){
   };
 }
 function buy(b,n,v){const c=n*v;if(c>S.cash)return toast('Not enough credits');track('buy_slot',{biz:b.id,qty:n,price:v});S.cash-=c;S.lots.push({id:b.id,q:n,p:v,d:today()});
-  S.hist.unshift({d:today(),t:`Bought ${n} × ${b.name}`,a:-c,k:'buy'});save();render();toast(`You now own ${n} slot${n>1?'s':''}`)}
+  S.hist.unshift({d:today(),t:`Bought ${n} × ${b.name}`,a:-c,k:'buy'});save();render();toast(`You now own ${n} share${n>1?'s':''}`)}
 function sell(b,n,v){track('sell_slot',{biz:b.id,qty:n,price:v});let left=n;for(const l of S.lots.filter(l=>l.id===b.id)){const k=Math.min(l.q,left);l.q-=k;left-=k;if(!left)break}
   S.lots=S.lots.filter(l=>l.q>0);S.cash+=n*v;S.hist.unshift({d:today(),t:`Sold ${n} × ${b.name}`,a:n*v,k:'sell'});save();render();toast(`Sold for ${fmt(n*v)}`)}
 function burst(el){if(reduce)return;const r=el.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
@@ -222,18 +224,19 @@ function agg(rows){const m=new Map();for(const[id,a]of rows)m.set(id,(m.get(id)|
 function showTab(id){document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x.dataset.tab===id));document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.id===id));scrollTo({top:0});track('tab_view',{tab:id})}
 document.addEventListener('click',e=>{
   const t=e.target.closest('[data-tab],[data-buy],[data-sell],[data-pick],[data-detail]'); if(!t) return;
-  if(t.dataset.pick){pick(t.dataset.pick);closeSheet();return}
-  if(t.dataset.tab) showTab(t.dataset.tab);
+  if(t.dataset.pick){if(!needAuth('Sign in to save your picks'))return;pick(t.dataset.pick);closeSheet();return}
+  if(t.dataset.tab){if(t.dataset.tab==='portfolio'&&!needAuth('Sign in to see your shares'))return;showTab(t.dataset.tab)}
   if(t.dataset.detail) detailSheet(BYID[t.dataset.detail]);
+  if((t.dataset.buy||t.dataset.sell)&&!needAuth('Sign in to save your picks'))return;
   if(t.dataset.buy) qtySheet(BYID[t.dataset.buy],'buy');
   if(t.dataset.sell) qtySheet(BYID[t.dataset.sell],'sell');
 });
 $('#fToggle').onclick=()=>{$('#filters').hidden=!$('#filters').hidden};
-$('#collect').onclick=collect;
+$('#collect').onclick=()=>{if(needAuth('Sign in to save your picks'))collect()};
 const DEP_CAP=N(5000000);
 function deposit(n){if(S.dep+n>DEP_CAP)return toast('Practice credit limit is ₦5,000,000');S.cash+=n;S.dep+=n;S.hist.unshift({d:today(),t:`Added · ${fmt(n)} practice credits (free, not real money)`,a:n,k:'dep'});save();render();toast(`+${fmt(n)} practice credits added`)}
-function withdraw(n){if(!(n>0))return toast('Enter an amount');if(n>S.cash)return toast('Not enough practice credits');S.cash-=n;S.wallet+=n;S.wd+=n;S.hist.unshift({d:today(),t:`Moved to practice wallet · ${fmt(n)} to Practice wallet`,a:-n,k:'wd'});save();render();toast(`${fmt(n)} moved to Practice wallet`)}
-document.addEventListener('click',e=>{const d=e.target.closest('[data-dep]');if(d)deposit(N(+d.dataset.dep));const w=e.target.closest('[data-wd]');if(w)withdraw(w.dataset.wd==='all'?S.cash:N(+w.dataset.wd))});
+function withdraw(n){if(!(n>0))return toast('Enter an amount');if(n>S.cash)return toast('Not enough practice credits');S.cash-=n;S.wallet+=n;S.wd+=n;S.hist.unshift({d:today(),t:`Collected · ${fmt(n)} to Practice wallet`,a:-n,k:'wd'});save();render();toast(`${fmt(n)} collected to Practice wallet`)}
+document.addEventListener('click',e=>{const d=e.target.closest('[data-dep]'),w0=e.target.closest('[data-wd]');if((d||w0)&&!needAuth('Sign in to add practice credits'))return;if(d)deposit(N(+d.dataset.dep));const w=e.target.closest('[data-wd]');if(w)withdraw(w.dataset.wd==='all'?S.cash:N(+w.dataset.wd))});
 $('#wdForm').onsubmit=e=>{e.preventDefault();const v=Math.round(parseFloat($('#wdAmt').value)*100);withdraw(v);$('#wdAmt').value=''};
 $('#fState').innerHTML='<option value="">All 37 states</option>'+STATES.map(s=>{const n=BIZ.filter(b=>b.state===s).length;return `<option value="${s}">${s} (${n})</option>`}).join('');
 $('#fCat').innerHTML='<option value="">All categories</option>'+[...new Set(BIZ.map(b=>b.cat))].map(c=>`<option>${c}</option>`).join('');
@@ -241,7 +244,7 @@ $('#bizState').innerHTML='<option value="" disabled selected>Choose state</optio
 $('#wlState').innerHTML='<option value="">State (optional)</option>'+STATES.map(s=>`<option>${s}</option>`).join('');
 document.querySelectorAll('#wlForm [name=kind]').forEach(r=>r.onchange=()=>{const o=$('#wlForm [name=kind]:checked').value==='owner';$('#wlType').hidden=!o;$('#wlType').required=o});
 ['#fState','#fCat'].forEach(x=>$(x).onchange=renderMarket);$('#hFilter').onchange=renderHist;
-function resetAcct(){if(confirm('Reset your practice account? All practice slots and history will be cleared.')){S=fresh();save();render();closeSheet();track('reset');toast('Fresh start: ₦500,000 practice credits')}}
+function resetAcct(){if(confirm('Reset your practice account? All practice shares and history will be cleared.')){S=fresh();save();render();closeSheet();track('reset');toast('Fresh start: ₦500,000 practice credits')}}
 const clip=(v,n)=>String(v||'').trim().slice(0,n)||null;
 async function cloudInsert(table,row){const sb=sbc();if(!sb)return false;try{const {error}=await sb.from(table).insert(row);return !error}catch(e){return false}}
 $('#bizForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));const btn=e.target.querySelector('button');btn.disabled=true;
@@ -272,7 +275,7 @@ function renderChallenge(){
   const opts='<option value="" disabled selected>Choose a business</option>'+BIZ.filter(b=>!c.picks.find(p=>p.id===b.id)).map(b=>`<option value="${b.id}">${esc(b.name)} (${esc(b.state)})</option>`).join('');
   $('#chPicks').innerHTML=c.picks.map(p=>{const b=BYID[p.id],ch=(value(b,today())-p.v)*100/p.v;return `<div class="row chp"><span>${esc(b.name)}</span><b class="${ch>=0?'up':'down'}">${ch>=0?'+':''}${ch.toFixed(2)}%</b></div>`}).join('')+
    (c.picks.length<3?`<div class="row"><select id="chSel" style="flex:1;margin:0">${opts}</select><button class="btn" id="chAdd">Pick (${c.picks.length}/3)</button></div>`:`<p class="tiny muted">Your 3 picks are locked in. Score: <b>${chScore(c).toFixed(2)}%</b></p>`);
-  const add=$('#chAdd'); if(add) add.onclick=()=>{const v=$('#chSel').value;if(v)pick(v)};
+  const add=$('#chAdd'); if(add) add.onclick=()=>{if(!needAuth('Sign in to save your picks'))return;const v=$('#chSel').value;if(v)pick(v)};
 }
 setInterval(()=>{const e=$('#cdown');if(e&&$('#chFold').open)renderChallenge()},30000);
 
@@ -287,16 +290,16 @@ function makeCard(){
   g.fillStyle=fg;g.font='700 56px Inter,sans-serif';g.fillText('kobo share',200,160);
   g.fillStyle='#ffb547';g.fillRect(80,240,560,64);g.fillStyle='#05070a';g.font='600 32px "JetBrains Mono",monospace';g.fillText('PRACTICE · NO REAL MONEY',100,284);
   const wp=weekPct(),st=streak();
-  g.fillStyle=mu;g.font='500 40px Inter,sans-serif';g.fillText('My practice portfolio this week',80,420);
+  g.fillStyle=mu;g.font='500 40px Inter,sans-serif';g.fillText('My practice score this week',80,420);
   g.fillStyle=wp>=0?ac:'#ff5c7a';g.font='800 150px Inter,sans-serif';g.fillText((wp>=0?'+':'')+wp.toFixed(2)+'%',80,580);
   g.fillStyle=fg;g.font='600 52px Inter,sans-serif';g.fillText(`streak ${st} day${st===1?'':'s'}`,80,700);
-  g.fillStyle=mu;g.font='400 31px Inter,sans-serif';g.fillText('A game for learning how owning a piece of a business works.',80,820);g.fillText('Fictional businesses. Not an investment.',80,870);
+  g.fillStyle=mu;g.font='400 31px Inter,sans-serif';g.fillText('A game for learning how owning a piece of a business works.',80,820);g.fillText('Fictional businesses. No real money.',80,870);
   g.fillStyle=ac;g.font='500 34px "JetBrains Mono",monospace';g.fillText(SITE.replace('https://',''),80,980);
   return c;
 }
 async function shareCard(){track('share');
   const c=makeCard(),blob=await new Promise(r=>c.toBlob(r,'image/png')),file=new File([blob],'kobo-share-practice.png',{type:'image/png'});
-  const text=`My practice portfolio on Kobo Share (practice · no real money). ${SITE}`;
+  const text=`My practice score on Kobo Share (practice · no real money). ${SITE}`;
   try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],text,title:'Kobo Share practice card'});return}}catch(e){if(e.name==='AbortError')return}
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);toast('Practice card downloaded');
 }
@@ -309,7 +312,7 @@ let _sb=null, USER=null;
 function sbc(){if(_sb)return _sb;try{if(window.supabase&&window.supabase.createClient)_sb=window.supabase.createClient(SB_URL,SB_KEY)}catch(e){}return _sb}
 async function isOwner(){if(!USER||!USER.email||!crypto.subtle)return false;const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(USER.email.toLowerCase().trim()));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')===OWNER_H}
 async function renderStats(){
-  const box=$('#statsBox'),sb=sbc(),D='—';let s=null;
+  const box=$('#statsBox'),sb=sbc(),D='-';let s=null;
   if(sb){try{const r=await sb.rpc('kobo_stats');if(!r.error)s=r.data}catch(e){}}
   const v=x=>x===null||x===undefined?D:Number(x).toLocaleString('en-NG');
   const cat={};let mk='';
@@ -318,8 +321,8 @@ async function renderStats(){
   const cats=Object.entries(cat).sort((a,b)=>b[1]-a[1]).slice(0,5);
   const list=(arr)=>arr&&arr.length?'<table>'+arr.map(r=>`<tr><td>${esc(r.k)}</td><td>${v(r.n)}</td></tr>`).join('')+'</table>':`<p class="tiny muted">${D}</p>`;
   let html=`<div class="sbox"><h2>Practice market <span class="tag">practice</span></h2><p class="tiny muted">Totals across signed-in players. Fictional example businesses, practice credits only.</p>
-    <div class="kv"><div><small>slots bought</small><b>${v(s&&s.slots_bought)}</b></div><div><small>top category</small><b>${cats[0]?esc(cats[0][0]):D}</b></div></div>
-    <h3 class="sub">Most-owned example businesses</h3>${mk?'<table><tr><th>#</th><th>Business</th><th>Slots</th></tr>'+mk+'</table>':`<p class="tiny muted">${D}</p>`}
+    <div class="kv"><div><small>shares owned</small><b>${v(s&&s.slots_bought)}</b></div><div><small>top category</small><b>${cats[0]?esc(cats[0][0]):D}</b></div></div>
+    <h3 class="sub">Most-owned example businesses</h3>${mk?'<table><tr><th>#</th><th>Business</th><th>Shares</th></tr>'+mk+'</table>':`<p class="tiny muted">${D}</p>`}
     <h3 class="sub">Top categories</h3>${cats.length?'<table>'+cats.map(([k,n])=>`<tr><td>${esc(k)}</td><td>${v(n)}</td></tr>`).join('')+'</table>':`<p class="tiny muted">${D}</p>`}</div>`;
   if(s&&s.community){html+=`<div class="sbox"><h2>Community${s.is_owner?' <span class="tag">owner view</span>':''}</h2>
     <div class="kv"><div><small>players signed up</small><b>${v(s.players)}</b></div><div><small>early list</small><b>${v(s.waitlist)}</b></div><div><small>business owners interested</small><b>${s.owners===null?'Soon':v(s.owners)}</b></div></div>
@@ -342,6 +345,7 @@ function authUI(){const a=$('#authBtn');if(!USER){a.textContent='K';return}
   const m=USER.user_metadata||{},pic=m.avatar_url||m.picture,nm=m.full_name||m.name||USER.email||'K';
   a.innerHTML=pic?`<img src="${esc(pic)}" alt="" referrerpolicy="no-referrer">`:esc(nm.trim()[0].toUpperCase())}
 $('#authBtn').onclick=()=>{
+  if(!USER){needAuth('Sign in to save your picks');return}
   const prov=(USER&&USER.app_metadata&&USER.app_metadata.provider)||'email';
   sheet(`<h2>Account</h2><p class="muted tiny">Signed in as <b>${esc(USER?USER.email:'')}</b> via ${esc(prov)}. Your practice progress syncs to your account.</p>
   <div class="srow"><span>Dark / light</span><button class="theme" id="thBtn" aria-label="Toggle dark or light mode"><span class="knob"></span></button></div>
@@ -354,31 +358,45 @@ $('#authBtn').onclick=()=>{
   $('#modal').onclick=e=>{if(e.target===$('#modal')||e.target.dataset.close!==undefined)closeSheet()};
 };
 
-// ---- Sign-in gate ----
+// ---- Sign-in (only when saving: own/pick, add credits, My shares) ----
 const LIVE='https://0xzahra.github.io/kobo-share/';
-const redirectTo=()=>location.hostname.endsWith('github.io')?LIVE+(location.search||''):location.origin+location.pathname+location.search;
-let PROVIDERS={google:false,apple:false};
-function gateMsg(m){$('#gMsg').textContent=m}
-async function loadProviders(){
-  try{const r=await fetch(SB_URL+'/auth/v1/settings',{headers:{apikey:SB_KEY}});const j=await r.json();PROVIDERS={google:!!j.external.google,apple:!!j.external.apple}}catch(e){}
-  for(const [k,on] of Object.entries(PROVIDERS)){const b=$(k==='google'?'#gGoogle':'#gApple');b.disabled=!on;b.querySelector('.soon').hidden=on;b.title=on?'':'Coming soon'}
-  if(!PROVIDERS.google&&!PROVIDERS.apple){$('#gEmailForm').hidden=false;$('#gEmail').hidden=true}
-}
-document.querySelectorAll('.sso').forEach(b=>b.onclick=async()=>{const pr=b.dataset.provider;if(!PROVIDERS[pr])return gateMsg('Coming soon. Use the email link for now.');
-  const sb=sbc();if(!sb)return gateMsg('Sign-in is unavailable right now. Try again shortly.');
-  try{localStorage.setItem('koboShare.pendingSrc',SRC)}catch(e){}
-  const {error}=await sb.auth.signInWithOAuth({provider:pr,options:{redirectTo:redirectTo()}});if(error)gateMsg('Could not start sign-in: '+error.message)});
-$('#gEmail').onclick=()=>{$('#gEmailForm').hidden=false;$('#gEmail').hidden=true;$('#gEmailForm input').focus()};
-$('#gEmailForm').onsubmit=async e=>{e.preventDefault();const sb=sbc();if(!sb)return gateMsg('Sign-in is unavailable right now.');const btn=e.target.querySelector('button');btn.disabled=true;
-  const {error}=await sb.auth.signInWithOtp({email:e.target.email.value.trim(),options:{emailRedirectTo:redirectTo(),data:{src:SRC}}});btn.disabled=false;
-  gateMsg(error?'Could not send the link: '+error.message:'Check your email for the login link.')};
-function openApp(){$('#gate').hidden=true;$('#app').hidden=false;document.body.classList.remove('locked');const v=$('.gvid');v&&v.pause();render()}
+const redirectTo=()=>(location.hostname.endsWith('github.io')?LIVE:location.origin+location.pathname)+(SRC&&SRC!=='direct'?'?src='+encodeURIComponent(SRC):'');
+let PROVIDERS={google:true};
+async function loadProviders(){try{const r=await fetch(SB_URL+'/auth/v1/settings',{headers:{apikey:SB_KEY}});const j=await r.json();PROVIDERS={google:!!j.external.google}}catch(e){}}
+function needAuth(title){if(USER)return true;track('signin_prompt',{why:title});
+  sheet(`<h2>${esc(title)}</h2><p class="muted tiny">Free and quick. Your practice shares, picks and credits stay saved to your account. Practice mode, no real money.</p>
+  <div class="gbtns"><button class="sso" id="gGoogle"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg><span>Continue with Google</span></button></div>
+  <button class="linkbtn" id="gEmail">Use an email link instead</button>
+  <form id="gEmailForm" class="gemail" hidden><input name="email" type="email" required maxlength="200" placeholder="you@email.com" autocomplete="email" aria-label="Email"><button class="btn">Send link</button></form>
+  <p id="gMsg" class="gmsg"></p>
+  <div class="row"><button class="btn ghost" style="flex:1" data-close>Keep browsing</button></div>`);
+  const msg=m=>$('#gMsg').textContent=m;
+  $('#gGoogle').onclick=async()=>{if(!PROVIDERS.google)return msg('Google sign-in is not available right now. Use the email link.');
+    const sb=sbc();if(!sb)return msg('Sign-in is unavailable right now. Try again shortly.');
+    try{localStorage.setItem('koboShare.pendingSrc',SRC);localStorage.setItem('koboShare.src',SRC)}catch(e){}
+    const {error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:redirectTo()}});if(error)msg('Could not start sign-in: '+error.message)};
+  $('#gEmail').onclick=()=>{$('#gEmailForm').hidden=false;$('#gEmail').hidden=true;$('#gEmailForm input').focus()};
+  $('#gEmailForm').onsubmit=async e=>{e.preventDefault();const sb=sbc();if(!sb)return msg('Sign-in is unavailable right now.');const btn=e.target.querySelector('button');btn.disabled=true;
+    try{localStorage.setItem('koboShare.pendingSrc',SRC)}catch(e){}
+    const {error}=await sb.auth.signInWithOtp({email:e.target.email.value.trim(),options:{emailRedirectTo:redirectTo(),data:{src:SRC}}});btn.disabled=false;
+    msg(error?'Could not send the link: '+error.message:'Check your email for the login link.')};
+  $('#modal').onclick=e=>{if(e.target===$('#modal')||e.target.dataset.close!==undefined)closeSheet()};
+  return false}
+// First-visit intro: dismissible, shown once per device
+const IKEY='koboShare.introSeen';
+function closeIntro(){$('#gate').hidden=true;document.body.classList.remove('locked');const v=$('.gvid');v&&v.pause();try{localStorage.setItem(IKEY,'1')}catch(e){}}
+(function intro(){let seen=false;try{seen=!!localStorage.getItem(IKEY)}catch(e){}
+  if(seen||window.__KOBO_PREVIEW)return;$('#gate').hidden=false;document.body.classList.add('locked');const v=$('.gvid');if(v&&!reduce){v.play().catch(()=>{})}})();
+$('#gStart').onclick=closeIntro;
+function openApp(){render()}
+render();
 
 let syncT=null;
 function pushState(){if(!USER||!sbc())return;clearTimeout(syncT);syncT=setTimeout(()=>sbc().from('profiles').update({practice_state:S,updated_at:new Date().toISOString()}).eq('id',USER.id).then(()=>{}),1500)}
 const _save=save; save=function(){S.updatedAt=Date.now();_save();pushState()};
 async function onLogin(user){
-  USER=user;authUI();openApp();const sb=sbc();
+  USER=user;authUI();closeSheet();if(!$('#gate').hidden)closeIntro();openApp();const sb=sbc();
+  let pend=null;try{pend=localStorage.getItem('koboShare.pendingSrc')}catch(e){}const srcTag=pend||SRC;
   const m=user.user_metadata||{},prov=(user.app_metadata&&user.app_metadata.provider)||'email';
   try{const {data}=await sb.from('profiles').select('practice_state,src,name,provider').eq('id',user.id).maybeSingle();
     const remote=data&&data.practice_state;
@@ -386,10 +404,11 @@ async function onLogin(user){
     else pushState();
     const upd={email:user.email,provider:prov,last_sign_in_at:new Date().toISOString()};
     const nm=m.full_name||m.name; if(nm&&!(data&&data.name)) upd.name=String(nm).slice(0,100);
-    if(!(data&&data.src)) upd.src=SRC;
+    if(!(data&&data.src)) upd.src=srcTag;
     await sb.from('profiles').update(upd).eq('id',user.id);
   }catch(e){}
-  let k='koboShare.signin.'+user.id;try{if(!sessionStorage.getItem(k)){sessionStorage.setItem(k,'1');track('sign_in',{provider:prov})}}catch(e){}
+  let k='koboShare.signin.'+user.id;try{if(!sessionStorage.getItem(k)){sessionStorage.setItem(k,'1');track('sign_in',{provider:prov,first_src:srcTag})}}catch(e){}
+  try{localStorage.removeItem('koboShare.pendingSrc')}catch(e){}
   flushEvents(); track('tab_view',{tab:'home'});
   if(QS.get('admin')==='1')renderAdmin();
 }
@@ -399,13 +418,12 @@ async function renderAdmin(){
   if(!(await isOwner())){d.innerHTML='<p class="tiny muted">Owner view: sign in as the owner to see records.</p>';return}
   let a=null;try{const r=await sbc().rpc('kobo_admin');if(!r.error)a=r.data}catch(e){}
   if(!a){d.innerHTML='<p class="tiny muted">Could not load owner data.</p>';return}
-  const dt=x=>x?new Date(x).toLocaleString('en-GB',{timeZone:'Africa/Lagos',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'—';
+  const dt=x=>x?new Date(x).toLocaleString('en-GB',{timeZone:'Africa/Lagos',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'-';
   d.innerHTML=`<h2 style="font-size:17px">Owner view <span class="tag">private</span></h2><p class="tiny muted">${a.players} players · ${a.events_7d} events in 7 days · times WAT (Lagos)</p>
   <h3 class="sub">Event counts</h3>${a.events.length?'<table>'+a.events.map(r=>`<tr><td>${esc(r.k)}</td><td>${r.n}</td></tr>`).join('')+'</table>':'<p class="tiny muted">No events yet.</p>'}
-  <h3 class="sub">Recent sign-ups</h3><table><tr><th>Email</th><th>Via</th><th>Joined</th></tr>${a.signups.map(u=>`<tr><td>${esc(u.email||'')}${u.name?`<br><span class="tiny muted">${esc(u.name)}</span>`:''}</td><td>${esc(u.provider||'—')}<br><span class="tiny muted">${esc(u.src||'')}</span></td><td>${dt(u.created_at)}</td></tr>`).join('')}</table>`;
+  <h3 class="sub">Recent sign-ups</h3><table><tr><th>Email</th><th>Via</th><th>Joined</th></tr>${a.signups.map(u=>`<tr><td>${esc(u.email||'')}${u.name?`<br><span class="tiny muted">${esc(u.name)}</span>`:''}</td><td>${esc(u.provider||'-')}<br><span class="tiny muted">${esc(u.src||'')}</span></td><td>${dt(u.created_at)}</td></tr>`).join('')}</table>`;
 }
 (function initAuth(){
-  if(window.__KOBO_PREVIEW){openApp();return} // local screen-recording only
   if(!initAuth.p){initAuth.p=1;loadProviders()}
   const sb=sbc();if(!sb){setTimeout(initAuth,500);return}
   let done=false;
@@ -413,6 +431,6 @@ async function renderAdmin(){
   sb.auth.getSession().then(({data})=>{if(data&&data.session&&!done)onLogin(data.session.user,false)});
 })();
 
-// ---- Privacy sheet (gate link) ----
+// ---- Privacy sheet (intro link) ----
 const PRIV_HTML='Kobo Share records your email and in-app activity to run and improve Kobo Share. Never sold. Handled in line with the NDPA 2023. To delete your data or get support, message <a href="https://x.com/0xarewah" target="_blank" rel="noopener">X @0xarewah</a> or <a href="https://t.me/Oxarewah" target="_blank" rel="noopener">Telegram @Oxarewah</a>.';
 document.getElementById('gPriv').onclick=e=>{e.preventDefault();sheet(`<h2>Privacy</h2><p class="tiny muted">${PRIV_HTML}</p><p class="tiny muted">Practice game only. No real money is used, collected or paid. All businesses are fictional examples. Not an investment, not an offer or solicitation, and not registered with the SEC Nigeria.</p><p class="tiny"><a href="privacy.html" target="_blank">Privacy Policy</a> · <a href="terms.html" target="_blank">Terms of Use</a></p><div class="row"><button class="btn" style="flex:1" data-close>Close</button></div>`);$('#modal').onclick=ev=>{if(ev.target===$('#modal')||ev.target.dataset.close!==undefined)closeSheet()}};
