@@ -1,7 +1,8 @@
 'use strict';
 // All money is integer kobo (₦1 = 100 kobo). Practice credits only, not real money.
 const N = n => n * 100; // naira -> kobo
-const START = N(500000);
+const START = N(5000000); // starting practice credits (was ₦500,000 before v5)
+const OLD_START = N(500000);
 const STATES=['Abia','Adamawa','Akwa Ibom','Anambra','Bauchi','Bayelsa','Benue','Borno','Cross River','Delta','Ebonyi','Edo','Ekiti','Enugu','FCT Abuja','Gombe','Imo','Jigawa','Kaduna','Kano','Katsina','Kebbi','Kogi','Kwara','Lagos','Nasarawa','Niger','Ogun','Ondo','Osun','Oyo','Plateau','Rivers','Sokoto','Taraba','Yobe','Zamfara']; // 36 states + FCT
 // Fictional example listings (invented names, not real companies). mk(id,name,category,state,area,price₦,slots,bad-day %,downside)
 const mk=(id,name,cat,state,area,p,slots,bad,dn=.6)=>({id,name,cat,state,area,city:state,price:N(p),slots,max:Math.round(N(p)*.016),min:-Math.round(N(p)*.016*dn),bad});
@@ -74,10 +75,11 @@ let LS_SRC=null;try{LS_SRC=localStorage.getItem('koboShare.src')}catch(e){}
 const SRC=(QS.get('src')||QS.get('utm_source')||LS_SRC||S.src||'direct').toLowerCase().replace(/[^a-z0-9_.-]/g,'').slice(0,40)||'direct';
 if(!S.src||QS.get('src')||QS.get('utm_source')) S.src=SRC;
 try{if(QS.get('src')||QS.get('utm_source')||!LS_SRC)localStorage.setItem('koboShare.src',SRC)}catch(e){} // saved before any sign-in redirect
-function fresh(){return {v:4,src:null,wlList:[],ch:null,cash:START,lots:[],hist:[],last:today(),biz:[],wl:null,created:today(),dep:0,wd:0,wallet:0}}
+function fresh(){return {v:5,start:START,src:null,wlList:[],ch:null,cash:START,lots:[],hist:[],last:today(),biz:[],wl:null,created:today(),dep:0,wd:0,wallet:0}}
 function kindOf(t){return /^Bought/.test(t)?'buy':/^Sold/.test(t)?'sell':/^(Deposit|Added)/.test(t)?'dep':/^(Withdraw|Cash out|Moved to)/.test(t)?'wd':/^Retired/.test(t)?'sell':'pay'}
 function migrate(s){
-  if(s.v>=4) return s;
+  if(s.v>=5) return s;
+  if(s.v>=4) return topUp(s);
   if(!(s.v>=2)){
   s.hist=(s.hist||[]).map(h=>({...h,k:h.k||kindOf(h.t)}));
   const legacy=Object.fromEntries(LEGACY.map(b=>[b.id,b]));
@@ -91,7 +93,14 @@ function migrate(s){
   s.hist=(s.hist||[]).map(h=>({...h,t:String(h.t).replace(/^Deposit ·/,'Added ·').replace(/^(Withdraw|Cash out \(practice\)) ·/,'Moved to practice wallet ·').replace(/simulated wallet/g,'Practice wallet').replace(/(Pay[o]ut|Practice earnings) ·/,'Practice score ·')}));
   s.wlList=s.wlList||(s.wl?[{email:s.wl,src:'unknown',at:0}]:[]);
   s.biz=(s.biz||[]).map(x=>({...x,src:x.src||'unknown'}));
-  return Object.assign(s,{v:4,src:s.src||null,ch:s.ch||null});
+  return topUp(Object.assign(s,{v:4,src:s.src||null,ch:s.ch||null}));
+}
+// v5: starting credits raised to START; top saved practice credits up to the new minimum (practice score unaffected)
+function topUp(s){
+  const add=Math.max(0,START-s.cash);
+  s.start=(s.start||OLD_START)+add; s.cash+=add;
+  if(add)s.hist=[{d:today(),t:`Added · ₦${(add/100).toLocaleString('en-NG')} practice credits top-up (new ₦5,000,000 minimum, free, not real money)`,a:add,k:'dep'},...(s.hist||[])];
+  return Object.assign(s,{v:5});
 }
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&Number.isInteger(s.cash))return migrate(s)}catch(e){}return fresh()}
 function save(){localStorage.setItem(KEY,JSON.stringify(S))}
@@ -113,7 +122,7 @@ function soldOut(b){return Math.max(0, Math.floor(b.slots*0.45) + Math.floor(rng
 function holdingsValue(){return S.lots.reduce((a,l)=>a+l.q*value(BYID[l.id],today()),0)}
 function netWorth(){return S.cash+holdingsValue()+S.wallet}
 function costBasis(id){return S.lots.filter(l=>!id||l.id===id).reduce((a,l)=>a+l.q*l.p,0)}
-function pnl(){const contrib=START+S.dep, total=netWorth()-contrib, unreal=holdingsValue()-costBasis();return {total,unreal,real:total-unreal,pct:total*100/contrib,contrib}}
+function pnl(){const contrib=(S.start||START)+S.dep, total=netWorth()-contrib, unreal=holdingsValue()-costBasis();return {total,unreal,real:total-unreal,pct:total*100/contrib,contrib}}
 
 function pending(){
   const t=today(); let total=0, days=[];
@@ -174,7 +183,7 @@ function renderAcct(){
   $('#pnl').innerHTML=`<div class="pbig ${cls}">${sg(p.total)}${PT} <span>${pc(p.total,p.contrib)}</span></div>
    <div class="kv"><div><small>realised</small><b class="${p.real>=0?'up':'down'}">${sg(p.real)}</b></div><div><small>unrealised</small><b class="${p.unreal>=0?'up':'down'}">${sg(p.unreal)}</b></div><div><small>holdings</small><b>${fmt(holdingsValue())}${PT}</b></div></div>
    <div class="kv"><div><small>practice credits</small><b>${fmt(S.cash)}${PT}</b></div><div><small>Practice wallet</small><b>${fmt(S.wallet)}${PT}</b></div><div><small>added practice credits</small><b>${fmt(S.dep)}${PT}</b></div></div>
-   <p class="tiny muted">Practice score = (credits + shares value + Practice wallet) − (₦500,000 starting credits + added practice credits). Realised = closed sells and collected practice scores; unrealised = open shares at today's practice value.</p>`;
+   <p class="tiny muted">Practice score = (credits + shares value + Practice wallet) − (starting credits + added practice credits). Realised = closed sells and collected practice scores; unrealised = open shares at today's practice value.</p>`;
   const ids=[...new Set(S.lots.map(l=>l.id))];
   $('#pnlHold').innerHTML=ids.length?'<table><tr><th>Holding</th><th>Cost</th><th>Value</th><th>Score</th></tr>'+ids.map(id=>{const c=costBasis(id),v=held(id)*value(BYID[id],today());
     return `<tr><td>${esc(BYID[id].name)}</td><td>${fmt(c)}${PT}</td><td>${fmt(v)}${PT}</td><td class="${v>=c?'up':'down'}">${v>=c?'+':''}${fmt(v-c)} <span class="tiny">${pc(v-c,c)}</span></td></tr>`}).join('')+'</table>':'<p class="tiny muted">No open holdings, so no unrealised practice score.</p>';
@@ -233,8 +242,8 @@ document.addEventListener('click',e=>{
 });
 $('#fToggle').onclick=()=>{$('#filters').hidden=!$('#filters').hidden};
 $('#collect').onclick=()=>{if(needAuth('Sign in to save your picks'))collect()};
-const DEP_CAP=N(5000000);
-function deposit(n){if(S.dep+n>DEP_CAP)return toast('Practice credit limit is ₦5,000,000');S.cash+=n;S.dep+=n;S.hist.unshift({d:today(),t:`Added · ${fmt(n)} practice credits (free, not real money)`,a:n,k:'dep'});save();render();toast(`+${fmt(n)} practice credits added`)}
+const DEP_CAP=N(20000000);
+function deposit(n){if(S.dep+n>DEP_CAP)return toast('Practice credit limit is ₦20,000,000');S.cash+=n;S.dep+=n;S.hist.unshift({d:today(),t:`Added · ${fmt(n)} practice credits (free, not real money)`,a:n,k:'dep'});save();render();toast(`+${fmt(n)} practice credits added`)}
 function withdraw(n){if(!(n>0))return toast('Enter an amount');if(n>S.cash)return toast('Not enough practice credits');S.cash-=n;S.wallet+=n;S.wd+=n;S.hist.unshift({d:today(),t:`Collected · ${fmt(n)} to Practice wallet`,a:-n,k:'wd'});save();render();toast(`${fmt(n)} collected to Practice wallet`)}
 document.addEventListener('click',e=>{const d=e.target.closest('[data-dep]'),w0=e.target.closest('[data-wd]');if((d||w0)&&!needAuth('Sign in to add practice credits'))return;if(d)deposit(N(+d.dataset.dep));const w=e.target.closest('[data-wd]');if(w)withdraw(w.dataset.wd==='all'?S.cash:N(+w.dataset.wd))});
 $('#wdForm').onsubmit=e=>{e.preventDefault();const v=Math.round(parseFloat($('#wdAmt').value)*100);withdraw(v);$('#wdAmt').value=''};
@@ -244,7 +253,7 @@ $('#bizState').innerHTML='<option value="" disabled selected>Choose state</optio
 $('#wlState').innerHTML='<option value="">State (optional)</option>'+STATES.map(s=>`<option>${s}</option>`).join('');
 document.querySelectorAll('#wlForm [name=kind]').forEach(r=>r.onchange=()=>{const o=$('#wlForm [name=kind]:checked').value==='owner';$('#wlType').hidden=!o;$('#wlType').required=o});
 ['#fState','#fCat'].forEach(x=>$(x).onchange=renderMarket);$('#hFilter').onchange=renderHist;
-function resetAcct(){if(confirm('Reset your practice account? All practice shares and history will be cleared.')){S=fresh();save();render();closeSheet();track('reset');toast('Fresh start: ₦500,000 practice credits')}}
+function resetAcct(){if(confirm('Reset your practice account? All practice shares and history will be cleared.')){S=fresh();save();render();closeSheet();track('reset');toast('Fresh start: ₦5,000,000 practice credits')}}
 const clip=(v,n)=>String(v||'').trim().slice(0,n)||null;
 async function cloudInsert(table,row){const sb=sbc();if(!sb)return false;try{const {error}=await sb.from(table).insert(row);return !error}catch(e){return false}}
 $('#bizForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));const btn=e.target.querySelector('button');btn.disabled=true;
@@ -281,7 +290,7 @@ setInterval(()=>{const e=$('#cdown');if(e&&$('#chFold').open)renderChallenge()},
 
 // ---- Shareable practice card (canvas PNG) ----
 const SITE='https://0xzahra.github.io/kobo-share/?src=share';
-function weekPct(){const wkAgo=today()-7;let a=0;const earned=S.hist.filter(h=>h.d>wkAgo&&h.k==='pay').reduce((x,h)=>x+h.a,0);return earned*100/(START+S.dep)}
+function weekPct(){const wkAgo=today()-7;let a=0;const earned=S.hist.filter(h=>h.d>wkAgo&&h.k==='pay').reduce((x,h)=>x+h.a,0);return earned*100/((S.start||START)+S.dep)}
 function makeCard(){
   const W=1080,H=1080,c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d'),light=root.dataset.theme==='light';
   const bg=light?'#f4f6f5':'#05070a',fg=light?'#0b0f0d':'#eef3f0',mu=light?'#5b6560':'#8a958f',ac='#39ff88';
