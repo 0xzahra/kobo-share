@@ -18,6 +18,10 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - name: Decode binary media (stored as base64 text)
+        run: |
+          for f in media/*.b64; do base64 -d "$f" > "$(basename "${f%.b64}")"; done
+          ls -la intro*
       - uses: actions/configure-pages@v5
         with:
           enablement: true
