@@ -46,7 +46,13 @@ function save(){localStorage.setItem(KEY,JSON.stringify(S))}
 const fmt = k => (k<0?'-':'')+'₦'+(Math.abs(k)/100).toLocaleString('en-NG',{minimumFractionDigits:0,maximumFractionDigits:2});
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,2600)}
+const ini = n => n.replace(/[^A-Za-z ]/g,'').split(' ').filter(w=>w.length>2).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+function toast(m){const t=$('#toast');t.hidden=true;void t.offsetWidth;t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,2600)}
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// Animated number counter
+function countTo(el,to,f=fmt){const from=el._v??to;el._v=to;if(reduce||from===to){el.textContent=f(to);return}
+  const t0=performance.now(),dur=900;cancelAnimationFrame(el._r);
+  const step=now=>{const p=Math.min(1,(now-t0)/dur),e=1-Math.pow(1-p,4);el.textContent=f(Math.round(from+(to-from)*e));if(p<1)el._r=requestAnimationFrame(step)};el._r=requestAnimationFrame(step)}
 
 function held(id){return S.lots.filter(l=>l.id===id).reduce((a,l)=>a+l.q,0)}
 function soldOut(b){return Math.max(0, Math.floor(b.slots*0.45) + Math.floor(rng('so'+b.id)()*b.slots*0.3))} // simulated other owners
@@ -62,60 +68,66 @@ function pending(){
   }
   return {total,days,n:Math.min(t-S.last,30)};
 }
+// Streak: consecutive Lagos days with a collect
+function streak(){const c=S.cd||[],t=today();let d=c.includes(t)?t:t-1,n=0;while(c.includes(d)){n++;d--}return n}
 
 function render(){
   const nw=netWorth(), pl=nw-START;
-  $('#cash').textContent=fmt(S.cash); $('#nw').textContent=fmt(nw);
-  $('#pl').innerHTML=`<span class="${pl>=0?'':'down'}" style="${pl>=0?'color:#9ff0c4':''}">${pl>=0?'+':''}${fmt(pl)}</span>`;
-  const p=pending(), btn=$('#collect');
-  if(p.n<=0){btn.disabled=true;btn.textContent='✅ Collected for today';$('#collectNote').textContent='Come back tomorrow (Lagos time) for the next payout. Patience na virtue 😄';}
-  else if(!S.lots.length){btn.disabled=true;btn.textContent='Buy slots to start earning';$('#collectNote').textContent='Slots you buy today start earning from tomorrow.';}
-  else{btn.disabled=false;btn.textContent=`Collect ${p.n} day${p.n>1?'s':''} payout`;$('#collectNote').textContent='Simulated payouts. Results vary and are not guaranteed.';}
+  countTo($('#cash'),S.cash); countTo($('#nw'),nw);
+  $('#pl').innerHTML=`<span class="${pl>=0?'up':'down'}">${pl>=0?'▲ +':'▼ '}${fmt(pl)}</span> <span class="mono">all time</span>`;
+  const st=streak(), c=S.cd||[], t=today();
+  $('#streakN').textContent=st; $('#streak').classList.toggle('on',st>0);
+  $('#week').innerHTML=[6,5,4,3,2,1,0].map(i=>`<i class="${c.includes(t-i)?'y':''} ${i===0?'t':''}"></i>`).join('');
+  const p=pending(), btn=$('#collect'), lbl=btn.querySelector('.lbl');
+  if(p.n<=0){btn.disabled=true;lbl.textContent='Collected for today';$('#collectNote').textContent='Next payout unlocks tomorrow (Lagos time). Patience na virtue.';}
+  else if(!S.lots.length){btn.disabled=true;lbl.textContent='Buy slots to start earning';$('#collectNote').textContent='Slots you buy today start earning from tomorrow.';}
+  else{btn.disabled=false;lbl.textContent=`Collect ${p.n} day${p.n>1?'s':''} payout`;$('#collectNote').textContent='Simulated payouts. Results vary and are not guaranteed.';}
   renderMarket(); renderPort(); renderHist(); renderBoard(nw);
 }
 function renderMarket(){
   const t=today();
-  $('#listings').innerHTML=BIZ.map(b=>{
-    const v=value(b,t), ch=Math.round((v-value(b,t-1))*10000/value(b,t-1))/100, taken=soldOut(b)+held(b.id), pct=Math.min(100,Math.round(taken*100/b.slots));
-    return `<article class="card biz"><div class="h"><div class="emo">${b.e}</div><div><h3>${esc(b.name)}<span class="tag">example</span></h3><div class="loc">📍 ${b.area}, ${b.city}</div></div></div>
-    <div class="kv"><div><small>Slot price today</small><b>${fmt(v)}</b> <span class="${ch>=0?'up':'down'} tiny">${ch>=0?'▲':'▼'}${Math.abs(ch)}%</span></div>
-    <div><small>Daily / slot (not guaranteed)</small><b>${fmt(b.min)} – ${fmt(b.max)}</b></div>
-    <div><small>Bad-day chance</small><b>~${Math.round(b.bad*100)}%</b></div><div><small>You own</small><b>${held(b.id)} slot${held(b.id)===1?'':'s'}</b></div></div>
-    <div class="bar"><i style="width:${pct}%"></i></div><div class="tiny muted">${taken}/${b.slots} slots taken</div>
-    <button class="btn" data-buy="${b.id}" ${taken>=b.slots?'disabled':''}>${taken>=b.slots?'Sold out':'Own am small small →'}</button></article>`}).join('');
+  $('#listings').innerHTML=BIZ.map((b,i)=>{
+    const v=value(b,t), ch=Math.round((v-value(b,t-1))*10000/value(b,t-1))/100, taken=soldOut(b)+held(b.id), pct=Math.min(100,Math.round(taken*100/b.slots)), h=held(b.id);
+    return `<article class="card biz" style="animation-delay:${i*40}ms"><div class="h"><div class="av">${ini(b.name)}</div><div><h3>${esc(b.name)}<span class="tag">example</span></h3><div class="loc">${b.area}, ${b.city}</div></div></div>
+    <div class="price"><b>${fmt(v)}</b><span class="${ch>=0?'up':'down'} tiny mono">${ch>=0?'▲':'▼'} ${Math.abs(ch)}%</span><span class="tiny muted">per slot today</span></div>
+    <div class="kv"><div><small>daily/slot*</small><b>${fmt(b.min)}–${fmt(b.max).slice(1)}</b></div>
+    <div><small>bad-day</small><b>~${Math.round(b.bad*100)}%</b></div><div><small>you own</small><b>${h}</b></div></div>
+    <div class="bar"><i style="width:${pct}%"></i></div><div class="tiny muted mono">${taken}/${b.slots} slots taken · *not guaranteed</div>
+    <button class="btn" data-buy="${b.id}" ${taken>=b.slots?'disabled':''}>${taken>=b.slots?'Sold out':'Buy slots'}</button></article>`}).join('');
 }
+const empty = (m) => `<div class="card empty"><div class="ring"></div>${m}</div>`;
 function renderPort(){
   const ids=[...new Set(S.lots.map(l=>l.id))];
-  if(!ids.length){$('#port').innerHTML='<div class="card empty">💼 You never buy any slot yet.<br>Go Market, pick one wey sweet you.</div>';return}
+  if(!ids.length){$('#port').innerHTML=empty('No slots yet.<br>Pick one from the Market wey sweet you.');return}
   const t=today();
   $('#port').innerHTML='<div class="card"><table><tr><th>Business</th><th>Slots</th><th>Cost</th><th>Value</th><th></th></tr>'+ids.map(id=>{
     const b=BYID[id], q=held(id), cost=S.lots.filter(l=>l.id===id).reduce((a,l)=>a+l.q*l.p,0), v=q*value(b,t);
-    return `<tr><td>${b.e} ${esc(b.name.split(' ').slice(0,3).join(' '))}</td><td>${q}</td><td>${fmt(cost)}</td><td class="${v>=cost?'up':'down'}">${fmt(v)}</td><td><button class="btn ghost tiny" data-sell="${id}">Sell</button></td></tr>`}).join('')+
+    return `<tr><td>${esc(b.name.split(' ').slice(0,3).join(' '))}</td><td>${q}</td><td>${fmt(cost)}</td><td class="${v>=cost?'up':'down'}">${fmt(v)}</td><td><button class="btn ghost tiny" data-sell="${id}">Sell</button></td></tr>`}).join('')+
     `</table><p class="tiny muted">Total holdings: <b>${fmt(holdingsValue())}</b> · valuations fluctuate daily.</p></div>`;
 }
 function renderHist(){
-  if(!S.hist.length){$('#hist').innerHTML='<div class="card empty">📜 No payout yet. Buy slots, come back tomorrow, collect.</div>';return}
+  if(!S.hist.length){$('#hist').innerHTML=empty('No payouts yet.<br>Buy slots, come back tomorrow, collect.');return}
   $('#hist').innerHTML='<div class="card"><table><tr><th>Date</th><th>What</th><th>Amount</th></tr>'+S.hist.slice(0,80).map(h=>
-    `<tr><td>${new Date(h.d*864e5).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</td><td>${esc(h.t)}</td><td class="${h.a>0?'up':h.a<0?'down':''}">${h.a>0?'+':''}${fmt(h.a)}</td></tr>`).join('')+'</table></div>';
+    `<tr><td class="rk">${new Date(h.d*864e5).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</td><td>${esc(h.t)}</td><td class="${h.a>0?'up':h.a<0?'down':''}">${h.a>0?'+':''}${fmt(h.a)}</td></tr>`).join('')+'</table></div>';
 }
-const BOTS=['Chidi_Lagos','AmakaBuys','Musa.Kano','TundeOwnsAm','Ngozi PH','Halima_Abj','Emeka Big Boy','Zainab 💅','Seyi Hustle'];
+const BOTS=['Chidi_Lagos','AmakaBuys','Musa.Kano','TundeOwnsAm','Ngozi PH','Halima_Abj','Emeka Big Boy','Zainab K','Seyi Hustle'];
 function renderBoard(nw){
   const t=today(); const rows=BOTS.map((n,i)=>({n,v:START+Math.round((rng('bot'+i+t)()-.35)*N(60000))+i*N(1500)*((t%7)+1)}));
-  rows.push({n:'You 🫵',v:nw,me:1}); rows.sort((a,b)=>b.v-a.v);
-  $('#rank').textContent='#'+(rows.findIndex(r=>r.me)+1)+' / '+rows.length;
+  rows.push({n:'You',v:nw,me:1}); rows.sort((a,b)=>b.v-a.v);
+  $('#rank').textContent='#'+(rows.findIndex(r=>r.me)+1)+'/'+rows.length;
   $('#lb').innerHTML='<div class="card"><p class="tiny muted">Practice leaderboard (sample players are simulated).</p><table><tr><th>#</th><th>Player</th><th>Net worth</th></tr>'+
-    rows.map((r,i)=>`<tr style="${r.me?'background:#fff8e1;font-weight:700':''}"><td>${['🥇','🥈','🥉'][i]||i+1}</td><td>${esc(r.n)}</td><td>${fmt(r.v)}</td></tr>`).join('')+'</table></div>';
+    rows.map((r,i)=>`<tr class="${r.me?'me':''}"><td class="rk">${String(i+1).padStart(2,'0')}</td><td>${esc(r.n)}</td><td>${fmt(r.v)}</td></tr>`).join('')+'</table></div>';
 }
 
 function sheet(html){const m=$('#modal');m.innerHTML=`<div class="sheet">${html}</div>`;m.hidden=false}
 function closeSheet(){$('#modal').hidden=true}
 function qtySheet(b,mode){
   const v=value(b,today()), max= mode==='buy' ? Math.min(Math.floor(S.cash/v), b.slots-soldOut(b)-held(b.id)) : held(b.id);
-  if(max<1){toast(mode==='buy'?'Your practice credits no reach o 😅':'You no get slot to sell');return}
-  sheet(`<h2>${b.e} ${mode==='buy'?'Buy':'Sell'} slots</h2><p class="muted">${esc(b.name)} · ${fmt(v)} per slot today</p>
+  if(max<1){toast(mode==='buy'?'Your practice credits no reach o':'You have no slots to sell');return}
+  sheet(`<h2>${mode==='buy'?'Buy':'Sell'} slots</h2><p class="muted">${esc(b.name)} · ${fmt(v)} per slot today</p>
   <div class="qty"><button data-q="-1">−</button><input id="q" type="number" min="1" max="${max}" value="1" inputmode="numeric"><button data-q="1">+</button></div>
   <p>Total: <b id="tot">${fmt(v)}</b> <span class="tiny muted">(practice credits, max ${max})</span></p>
-  ${mode==='buy'?'<p class="tiny muted">Earnings not guaranteed. Bad days fit happen. Starts earning tomorrow.</p>':''}
+  ${mode==='buy'?'<p class="tiny muted">Earnings not guaranteed. Bad days can happen. Starts earning tomorrow.</p>':''}
   <div class="row"><button class="btn ghost" data-close>Cancel</button><button class="btn" style="flex:1" data-confirm>${mode==='buy'?'Confirm buy':'Confirm sell'}</button></div>`);
   const q=$('#q'), clamp=()=>{let n=parseInt(q.value,10);if(!Number.isInteger(n)||n<1)n=1;if(n>max)n=max;q.value=n;$('#tot').textContent=fmt(n*v);return n};
   q.oninput=clamp;
@@ -126,25 +138,41 @@ function qtySheet(b,mode){
   };
 }
 function buy(b,n,v){const c=n*v;if(c>S.cash)return toast('Not enough credits');S.cash-=c;S.lots.push({id:b.id,q:n,p:v,d:today()});
-  S.hist.unshift({d:today(),t:`Bought ${n} × ${b.name}`,a:-c});save();render();toast(`🎉 You don own ${n} slot${n>1?'s':''}!`)}
+  S.hist.unshift({d:today(),t:`Bought ${n} × ${b.name}`,a:-c});save();render();toast(`You now own ${n} slot${n>1?'s':''}`)}
 function sell(b,n,v){let left=n;for(const l of S.lots.filter(l=>l.id===b.id)){const k=Math.min(l.q,left);l.q-=k;left-=k;if(!left)break}
-  S.lots=S.lots.filter(l=>l.q>0);S.cash+=n*v;S.hist.unshift({d:today(),t:`Sold ${n} × ${b.name}`,a:n*v});save();render();toast(`💱 Sold for ${fmt(n*v)}`)}
+  S.lots=S.lots.filter(l=>l.q>0);S.cash+=n*v;S.hist.unshift({d:today(),t:`Sold ${n} × ${b.name}`,a:n*v});save();render();toast(`Sold for ${fmt(n*v)}`)}
+function burst(el){if(reduce)return;const r=el.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+  for(let i=0;i<18;i++){const c=document.createElement('i');c.className='coin';const a=Math.random()*Math.PI*2,d=60+Math.random()*90;
+    c.style.cssText=`left:${cx}px;top:${cy}px;--x:${Math.cos(a)*d}px;--y:${Math.sin(a)*d-40}px;animation-delay:${i*12}ms`;document.body.appendChild(c);setTimeout(()=>c.remove(),1200)}
+  navigator.vibrate&&navigator.vibrate(18)}
 function collect(){
   const p=pending(); if(p.n<=0) return;
-  for(const day of p.days){ for(const [id,a] of agg(day.rows)) S.hist.unshift({d:day.d,t:`${BYID[id].e} ${a<0?'Bad day':a===0?'No sales':'Payout'} · ${BYID[id].name}`,a}); }
-  S.cash+=p.total; S.last=today(); save(); render();
-  toast(p.total>0?`💰 Collected ${fmt(p.total)}! E don land.`:p.total<0?`😬 Rough day: ${fmt(p.total)}. Business na so.`:'😐 Nothing today. Tomorrow go better.');
+  for(const day of p.days){ for(const [id,a] of agg(day.rows)) S.hist.unshift({d:day.d,t:`${a<0?'Bad day':a===0?'No sales':'Payout'} · ${BYID[id].name}`,a}); }
+  S.cash+=p.total; S.last=today(); S.cd=[...(S.cd||[]).filter(d=>d>today()-60),today()]; save();
+  const btn=$('#collect'); btn.classList.remove('pop'); void btn.offsetWidth; btn.classList.add('pop'); if(p.total>0) burst(btn);
+  render();
+  toast(p.total>0?`+${fmt(p.total)} collected. E don land.`:p.total<0?`Rough day: ${fmt(p.total)}. Business na so.`:'Nothing today. Tomorrow go better.');
 }
 function agg(rows){const m=new Map();for(const[id,a]of rows)m.set(id,(m.get(id)||0)+a);return m}
 
+function movePill(){const on=$('.tabs button.on'),pill=$('.pill');if(!on)return;pill.style.width=on.offsetWidth+'px';pill.style.transform=`translateX(${on.offsetLeft-6}px)`}
 document.addEventListener('click',e=>{
   const t=e.target.closest('[data-tab],[data-buy],[data-sell]'); if(!t) return;
-  if(t.dataset.tab){document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===t));document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.id===t.dataset.tab))}
+  if(t.dataset.tab){document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===t));document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.id===t.dataset.tab));movePill();
+    const top=$('.panes').getBoundingClientRect().top+scrollY-90; if(scrollY>top) scrollTo({top,behavior:'smooth'})}
   if(t.dataset.buy) qtySheet(BYID[t.dataset.buy],'buy');
   if(t.dataset.sell) qtySheet(BYID[t.dataset.sell],'sell');
 });
+addEventListener('resize',movePill);
 $('#collect').onclick=collect;
-$('#reset').onclick=()=>{if(confirm('Reset your practice account? All practice slots and history go clear.')){S=fresh();save();render();toast('Fresh start: ₦500,000 practice credits')}};
-$('#bizForm').onsubmit=e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));S.biz.push({...f,at:Date.now()});save();e.target.reset();$('#bizMsg').textContent="✅ Saved on this device. We'll review am — thank you!"};
-$('#wlForm').onsubmit=e=>{e.preventDefault();S.wl=new FormData(e.target).get('email');save();e.target.reset();$('#wlMsg').textContent='✅ You dey the list (saved locally on this device only).'};
-save(); render();
+$('#reset').onclick=()=>{if(confirm('Reset your practice account? All practice slots and history will be cleared.')){S=fresh();save();render();toast('Fresh start: ₦500,000 practice credits')}};
+$('#bizForm').onsubmit=e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));S.biz.push({...f,at:Date.now()});save();e.target.reset();$('#bizMsg').textContent="Saved on this device. We'll review it, thank you."};
+$('#wlForm').onsubmit=e=>{e.preventDefault();S.wl=new FormData(e.target).get('email');save();e.target.reset();$('#wlMsg').textContent="You're on the list (saved locally on this device only)."};
+// Theme: follows system by default, remembers explicit choice
+const TKEY='koboShare.theme', root=document.documentElement;
+function setTheme(t){root.dataset.theme=t;document.querySelector('meta[name=theme-color]').content=t==='light'?'#f4f6f5':'#05070a'}
+setTheme(root.dataset.theme||'dark');
+$('#theme').onclick=()=>{const t=root.dataset.theme==='light'?'dark':'light';setTheme(t);try{localStorage.setItem(TKEY,t)}catch(e){}};
+matchMedia('(prefers-color-scheme: light)').addEventListener('change',e=>{if(!localStorage.getItem(TKEY))setTheme(e.matches?'light':'dark')});
+save(); requestAnimationFrame(movePill);
+setTimeout(()=>{$('#listings').classList.add('first');render();movePill();setTimeout(()=>$('#listings').classList.remove('first'),1200)}, reduce?0:350); // brief shimmer skeleton on first paint

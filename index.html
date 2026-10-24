@@ -9,42 +9,51 @@
 <meta property="og:description" content="Practice owning slots of Lagos, Kano, Abuja & PH businesses with free practice credits. No real money, just learn the game.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://0xzahra.github.io/kobo-share/">
-<meta name="theme-color" content="#0b3d2e">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪙</text></svg>">
+<meta name="theme-color" content="#05070a">
+<script>(function(){try{var t=localStorage.getItem('koboShare.theme')}catch(e){}if(t!=='light'&&t!=='dark')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';document.documentElement.dataset.theme=t})()</script>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='28' fill='%2305070a'/><circle cx='50' cy='50' r='22' fill='none' stroke='%2339ff88' stroke-width='10'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="banner">⚠️ <b>Practice mode</b> · Capital at risk in real life · Credits here are <b>not real money</b></div>
+<div class="grain" aria-hidden="true"></div>
+<div class="banner mono"><i class="dot"></i><b>Practice mode</b> · Capital at risk in real life · Credits are not real money</div>
 <header class="top">
-  <div class="brand">🪙 <span>Kobo<b>Share</b></span></div>
-  <div class="wallet"><small>Practice credits</small><strong id="cash">—</strong></div>
+  <div class="brand"><span class="logo" aria-hidden="true"></span><span>kobo<b>share</b></span></div>
+  <div class="topr">
+    <div class="wallet"><small class="mono">credits</small><strong id="cash" data-n>—</strong></div>
+    <button id="theme" class="theme" aria-label="Toggle dark or light mode"><span class="knob"></span></button>
+  </div>
 </header>
 <main>
-  <section class="hero card">
-    <div>
-      <h1>Own am small small 🇳🇬</h1>
-      <p>Buy slots in everyday Naija businesses, collect daily payouts, learn how small business money dey move. All with <b>free practice credits</b>.</p>
+  <section class="hero">
+    <p class="mono k">net worth</p>
+    <div class="big" id="nw">—</div>
+    <div class="chips">
+      <span class="chip" id="pl">—</span>
+      <span class="chip"><span class="mono">rank</span> <b id="rank">—</b></span>
+      <span class="chip streak" id="streak"><i class="flame"></i><b id="streakN">0</b> <span class="mono">day streak</span></span>
     </div>
-    <div class="stats">
-      <div><small>Net worth</small><strong id="nw">—</strong></div>
-      <div><small>Profit / loss</small><strong id="pl">—</strong></div>
-      <div><small>Rank</small><strong id="rank">—</strong></div>
-    </div>
-    <button id="collect" class="btn gold">Collect today's payout</button>
+    <div class="week" id="week" aria-label="Last 7 days collected"></div>
+    <button id="collect" class="btn collect"><span class="lbl">Collect today's payout</span></button>
     <p id="collectNote" class="muted tiny"></p>
+    <p class="tag-line">Own am small small.</p>
   </section>
 
-  <nav class="tabs">
-    <button data-tab="market" class="on">🏪 Market</button>
-    <button data-tab="portfolio">💼 My slots</button>
-    <button data-tab="history">📜 Payouts</button>
-    <button data-tab="board">🏆 Board</button>
-    <button data-tab="list">➕ List biz</button>
+  <nav class="tabs" role="tablist">
+    <span class="pill" aria-hidden="true"></span>
+    <button data-tab="market" class="on"><svg viewBox="0 0 24 24"><path d="M4 10h16v10H4zM3 10l2-6h14l2 6"/></svg><span>Market</span></button>
+    <button data-tab="portfolio"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4v8l6 4"/></svg><span>My slots</span></button>
+    <button data-tab="history"><svg viewBox="0 0 24 24"><path d="M4 18l5-6 4 3 7-9"/></svg><span>Payouts</span></button>
+    <button data-tab="board"><svg viewBox="0 0 24 24"><path d="M5 20V12M12 20V5M19 20v-5"/></svg><span>Board</span></button>
+    <button data-tab="list"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>List biz</span></button>
   </nav>
 
+  <div class="panes">
   <section id="market" class="tab on">
     <p class="muted tiny">Listings are <b>illustrative examples</b>, not real businesses. Earnings are ranges and <b>not guaranteed</b>.</p>
-    <div id="listings" class="grid"></div>
+    <div id="listings" class="grid"><div class="card sk"></div><div class="card sk"></div><div class="card sk"></div><div class="card sk"></div></div>
   </section>
   <section id="portfolio" class="tab"><div id="port"></div></section>
   <section id="history" class="tab"><div id="hist"></div></section>
@@ -52,37 +61,38 @@
   <section id="list" class="tab">
     <div class="card">
       <h2>List your business</h2>
-      <p class="muted">Got a shop wey dey move? Tell us. This form only saves <b>on your phone (localStorage)</b> — nothing is sent anywhere yet.</p>
+      <p class="muted">Got a shop wey dey move? Tell us. This form only saves <b>on this device (localStorage)</b>. Nothing is sent anywhere yet.</p>
       <form id="bizForm">
         <label>Business name<input name="name" required maxlength="60"></label>
         <label>Type<input name="type" required placeholder="e.g. Pepper soup joint" maxlength="60"></label>
         <label>City<select name="city"><option>Lagos</option><option>Kano</option><option>Abuja</option><option>Port Harcourt</option><option>Other</option></select></label>
-        <label>Tell us small about am<textarea name="about" rows="3" maxlength="400"></textarea></label>
+        <label>About the business<textarea name="about" rows="3" maxlength="400"></textarea></label>
         <button class="btn">Submit for review</button>
       </form>
       <p id="bizMsg" class="ok"></p>
     </div>
     <div class="card">
       <h2>Join the waitlist</h2>
-      <p class="muted">Your email is <b>stored locally on this device only</b>. We no dey send am anywhere.</p>
+      <p class="muted">Your email is <b>stored locally on this device only</b>. It is not sent anywhere.</p>
       <form id="wlForm" class="row"><input type="email" name="email" required placeholder="you@email.com"><button class="btn">Join</button></form>
       <p id="wlMsg" class="ok"></p>
     </div>
   </section>
+  </div>
 
   <section class="card how">
     <h2>How it works</h2>
     <ol>
-      <li>🎁 You get <b>₦500,000 practice credits</b> — free, not real money.</li>
-      <li>🛒 Buy slots for any business. Each slot = small piece of the daily earnings.</li>
-      <li>📅 Every real day, come <b>collect</b> your payout. Some days good, some days na loss — like real life.</li>
-      <li>💱 Sell slots back anytime at the current valuation (e dey go up and down).</li>
-      <li>🏆 Grow your net worth and climb the board.</li>
+      <li>You get <b>₦500,000 practice credits</b>. Free, not real money.</li>
+      <li>Buy slots in any business. Each slot is a small piece of its daily earnings.</li>
+      <li>Come back every real day to <b>collect</b>. Some days good, some days na loss, like real life.</li>
+      <li>Sell slots back anytime at the current valuation. It moves up and down.</li>
+      <li>Grow your net worth and climb the board.</li>
     </ol>
     <button id="reset" class="btn ghost tiny">Reset my practice account</button>
   </section>
 </main>
-<footer>Kobo Share is a practice app. No real money. Real-money investing will only launch with a licensed partner.</footer>
+<footer>Kobo Share is a practice app. No real money. No profit promises. Real-money investing will only launch with a licensed partner.</footer>
 <div id="modal" class="modal" hidden></div>
 <div id="toast" class="toast" hidden></div>
 <script src="app.js"></script>
