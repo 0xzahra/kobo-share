@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Kobo Share — Own am small small (practice app)</title>
-<meta name="description" content="Practice owning fractional slots of everyday Nigerian businesses with ₦500,000 free practice credits. No real money.">
-<meta property="og:title" content="Kobo Share — Own am small small">
-<meta property="og:description" content="Practice owning slots of example businesses across all 36 states + FCT with free practice credits. No real money, just learn the game.">
+<title>Kobo Share — a practice game: learn how owning a piece of a business works</title>
+<meta name="description" content="Kobo Share is a game for learning how owning a piece of a business works. All businesses are fictional examples. Free practice credits only. No real money, not an investment.">
+<meta property="og:title" content="Kobo Share — a game for learning how owning a piece of a business works">
+<meta property="og:description" content="Learn how owning a piece of a business works, with fictional example businesses across all 36 states + FCT. Practice mode · No real money · Not an investment or offer.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://0xzahra.github.io/kobo-share/">
 <meta name="theme-color" content="#05070a">
@@ -18,26 +18,28 @@
 </head>
 <body>
 <div class="grain" aria-hidden="true"></div>
-<div class="banner mono"><i class="dot"></i><b>Practice mode</b> · Capital at risk in real life · Credits are not real money</div>
+<div class="banner mono"><i class="dot"></i><b>Practice mode · No real money</b><span class="bx"> · Fictional businesses · Learning game only</span></div>
 <header class="top">
-  <div class="brand"><span class="logo" aria-hidden="true"></span><span>kobo<b>share</b></span></div>
+  <div class="brand"><span class="logo" aria-hidden="true"></span><span>kobo<b>share</b></span><span class="pchip mono" title="Practice mode · No real money">Practice · No real money</span></div>
   <div class="topr">
-    <div class="wallet"><small class="mono">credits</small><strong id="cash" data-n>—</strong></div>
+    <div class="wallet"><small class="mono">practice credits</small><strong><span id="cash">—</span><span class="ptag">Practice</span></strong></div>
     <button id="theme" class="theme" aria-label="Toggle dark or light mode"><span class="knob"></span></button>
   </div>
 </header>
 <main>
   <section class="hero">
-    <p class="mono k">net worth</p>
-    <div class="big" id="nw">—</div>
+    <p class="mono k">practice net worth</p>
+    <div class="big"><span id="nw">—</span><span class="ptag">Practice</span></div>
+    <p class="lede">A game for learning how owning a piece of a business works. Every business here is a <b>fictional example</b>, and every naira is a practice credit.</p>
     <div class="chips">
       <span class="chip" id="pl">—</span>
       <span class="chip"><span class="mono">rank</span> <b id="rank">—</b></span>
       <span class="chip streak" id="streak"><i class="flame"></i><b id="streakN">0</b> <span class="mono">day streak</span></span>
     </div>
     <div class="week" id="week" aria-label="Last 7 days collected"></div>
-    <button id="collect" class="btn collect"><span class="lbl">Collect today's payout</span></button>
+    <button id="collect" class="btn collect"><span class="lbl">Collect today's practice earnings</span></button>
     <p id="collectNote" class="muted tiny"></p>
+    <button id="share" class="btn ghost tiny" hidden>Share my practice card</button>
     <p class="tag-line">Own am small small.</p>
   </section>
 
@@ -46,50 +48,54 @@
     <button data-tab="market" class="on"><svg viewBox="0 0 24 24"><path d="M4 10h16v10H4zM3 10l2-6h14l2 6"/></svg><span>Market</span></button>
     <button data-tab="portfolio"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4v8l6 4"/></svg><span>My slots</span></button>
     <button data-tab="account"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M16 15h2"/></svg><span>Account</span></button>
+    <button data-tab="challenge"><svg viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0zM12 13v4M8 20h8M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4"/></svg><span>Challenge</span></button>
     <button data-tab="board"><svg viewBox="0 0 24 24"><path d="M5 20V12M12 20V5M19 20v-5"/></svg><span>Board</span></button>
-    <button data-tab="list"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>List biz</span></button>
+    <button data-tab="list"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>Early list</span></button>
   </nav>
 
   <div class="panes">
   <section id="market" class="tab on">
-    <p class="muted tiny">Listings are <b>illustrative examples</b>, not real businesses. Earnings are ranges and <b>not guaranteed</b>.</p>
+    <p class="muted tiny">Every listing is a <b>fictional example</b>, not a real business. Daily practice earnings are simulated ranges for learning, nothing is guaranteed.</p>
     <div class="filters"><label>State<select id="fState" aria-label="Filter by state"></select></label><label>Category<select id="fCat" aria-label="Filter by category"></select></label></div>
     <p id="mCount" class="tiny muted mono"></p>
     <div id="listings" class="grid"><div class="card sk"></div><div class="card sk"></div><div class="card sk"></div><div class="card sk"></div></div>
   </section>
   <section id="portfolio" class="tab"><div id="port"></div></section>
   <section id="account" class="tab">
-    <div class="card"><h2>Profit &amp; loss</h2><div id="pnl"></div><div id="pnlHold"></div></div>
+    <div class="card"><h2>Practice P&amp;L</h2><div id="pnl"></div><div id="pnlHold"></div></div>
     <div class="acct2">
-    <div class="card"><h2>Deposit <span class="tag">practice</span></h2>
+    <div class="card"><h2>Add practice credits <span class="tag">practice</span></h2>
       <p class="muted tiny">Top up with free practice credits. No bank, no card, no real money, ever.</p>
       <div class="presets"><button class="btn ghost" data-dep="50000">+₦50k practice</button><button class="btn ghost" data-dep="100000">+₦100k practice</button><button class="btn ghost" data-dep="250000">+₦250k practice</button><button class="btn ghost" data-dep="500000">+₦500k practice</button></div>
-      <p class="tiny muted">Practice deposits are capped at ₦5,000,000 and don't count toward your P&amp;L or Board score.</p></div>
-    <div class="card"><h2>Withdraw <span class="tag">practice</span></h2>
-      <p class="muted tiny">Move practice credits out to your <b>simulated wallet</b>. Nothing leaves this app; it can't be cashed out.</p>
+      <p class="tiny muted">Added practice credits are capped at ₦5,000,000 and don't count toward your P&amp;L or Board score.</p></div>
+    <div class="card"><h2>Cash out (practice) <span class="tag">practice</span></h2>
+      <p class="muted tiny">Move practice credits to your <b>Practice wallet</b>. Nothing leaves this app and it is never real money.</p>
       <div class="presets"><button class="btn ghost" data-wd="25000">₦25k</button><button class="btn ghost" data-wd="100000">₦100k</button><button class="btn ghost" data-wd="all">All credits</button></div>
-      <form id="wdForm" class="row"><input id="wdAmt" type="number" min="1" step="1" inputmode="numeric" placeholder="Amount (₦ practice)"><button class="btn">Withdraw</button></form></div>
+      <form id="wdForm" class="row"><input id="wdAmt" type="number" min="1" step="1" inputmode="numeric" placeholder="Amount (₦ practice)"><button class="btn">Cash out (practice)</button></form></div>
     </div>
-    <div class="card"><div class="row" style="justify-content:space-between"><h2>Transactions</h2><select id="hFilter" style="width:auto;margin:0"><option value="">All</option><option value="dep">Deposits</option><option value="wd">Withdrawals</option><option value="buy">Buys</option><option value="sell">Sells</option><option value="pay">Payouts</option></select></div><div id="hist"></div></div>
+    <div class="card"><div class="row" style="justify-content:space-between"><h2>Transactions</h2><select id="hFilter" style="width:auto;margin:0"><option value="">All</option><option value="dep">Added credits</option><option value="wd">Cash outs (practice)</option><option value="buy">Buys</option><option value="sell">Sells</option><option value="pay">Daily practice earnings</option></select></div><div id="hist"></div></div>
   </section>
+  <section id="challenge" class="tab"><div class="card"><h2>Weekly challenge <span class="tag">practice</span></h2>
+      <p class="muted">Pick 3 businesses this week. Best practice result wins. Score = average % change in slot value since you picked. Bragging rights only, no prizes.</p>
+      <p class="mono tiny">Ends in <b id="cdown">—</b> (Monday 00:00 Lagos time)</p><div id="chPicks"></div></div><div id="chBoard"></div></section>
   <section id="board" class="tab"><div id="lb"></div></section>
   <section id="list" class="tab">
     <div class="card">
-      <h2>List your business</h2>
-      <p class="muted">Got a shop wey dey move? Tell us. This form only saves <b>on this device (localStorage)</b>. Nothing is sent anywhere yet.</p>
+      <h2>Own a business? Join the early list</h2>
+      <p class="muted">Interest only, for a possible future licensed version. <b>Nothing is being raised or sold, no money is collected</b>, and no business is listed on Kobo Share. This form saves <b>on this device only (localStorage)</b>; nothing is sent anywhere.</p>
       <form id="bizForm">
         <label>Business name<input name="name" required maxlength="60"></label>
         <label>Type<input name="type" required placeholder="e.g. Poultry farm, phone shop" maxlength="60"></label>
         <label>State<select name="state" id="bizState" required></select></label>
         <label>About the business<textarea name="about" rows="3" maxlength="400"></textarea></label>
-        <button class="btn">Submit for review</button>
+        <button class="btn">Register interest</button>
       </form>
       <p id="bizMsg" class="ok"></p>
     </div>
     <div class="card">
-      <h2>Join the waitlist</h2>
-      <p class="muted">Your email is <b>stored locally on this device only</b>. It is not sent anywhere.</p>
-      <form id="wlForm" class="row"><input type="email" name="email" required placeholder="you@email.com"><button class="btn">Join</button></form>
+      <h2>Join the early list</h2>
+      <p class="muted">Interest only for a possible future licensed version. Nothing is being sold and no money is collected. Your email is <b>stored locally on this device only</b> and is not sent anywhere.</p>
+      <form id="wlForm" class="row"><input type="email" name="email" required placeholder="you@email.com"><button class="btn">Join early list</button></form>
       <p id="wlMsg" class="ok"></p>
     </div>
   </section>
@@ -99,16 +105,16 @@
     <h2>How it works</h2>
     <ol>
       <li>You get <b>₦500,000 practice credits</b>. Free, not real money.</li>
-      <li>Buy slots in any business. Each slot is a small piece of its daily earnings.</li>
-      <li>Come back every real day to <b>collect</b>. Some days good, some days na loss, like real life.</li>
+      <li>Buy practice slots in fictional example businesses to learn how owning a piece of a business works.</li>
+      <li>Come back every real day to <b>collect daily practice earnings</b>. Some days good, some days na loss, like real life.</li>
       <li>Sell slots back anytime at the current valuation. It moves up and down.</li>
-      <li>Track your P&amp;L, top up or withdraw practice credits in Account. None of it is real money.</li>
+      <li>Track your P&amp;L, add practice credits or cash out (practice) in Account. None of it is real money.</li>
       <li>Grow your net worth and climb the board.</li>
     </ol>
     <button id="reset" class="btn ghost tiny">Reset my practice account</button>
   </section>
 </main>
-<footer>Kobo Share is a practice app. No real money. No profit promises. Real-money investing will only launch with a licensed partner.</footer>
+<footer><b>Practice game only.</b> No real money is used, collected or paid. All businesses are fictional examples. Kobo Share is not an investment, not an offer or solicitation, and is not registered with the SEC Nigeria. Early-list sign-ups are interest only and stored on your device.</footer>
 <div id="modal" class="modal" hidden></div>
 <div id="toast" class="toast" hidden></div>
 <script src="app.js"></script>
