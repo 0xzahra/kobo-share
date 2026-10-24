@@ -51,7 +51,7 @@ const today = () => Math.floor((Date.now() + 3600e3) / 864e5); // Lagos day inde
 function hash(s){let h=2166136261;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0}
 function rng(seed){let a=hash(seed);return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 
-// Per-slot daily practice earnings for a business on a given day (kobo, may be negative or zero)
+// Per-slot practice score for a business on a given day (kobo, may be negative or zero)
 function earn(b, day){
   const r = rng(b.id+':'+day);
   if (r() < b.bad) return r() < .5 ? 0 : Math.round(b.min * (0.3 + 0.7*r()));
@@ -72,10 +72,10 @@ let S = load();
 const QS=new URLSearchParams(location.search);
 const SRC=(QS.get('src')||QS.get('utm_source')||S.src||'direct').toLowerCase().replace(/[^a-z0-9_.-]/g,'').slice(0,40)||'direct';
 if(!S.src||QS.get('src')||QS.get('utm_source')) S.src=SRC;
-function fresh(){return {v:3,src:null,wlList:[],ch:null,cash:START,lots:[],hist:[],last:today(),biz:[],wl:null,created:today(),dep:0,wd:0,wallet:0}}
-function kindOf(t){return /^Bought/.test(t)?'buy':/^Sold/.test(t)?'sell':/^(Deposit|Added)/.test(t)?'dep':/^(Withdraw|Cash out)/.test(t)?'wd':/^Retired/.test(t)?'sell':'pay'}
+function fresh(){return {v:4,src:null,wlList:[],ch:null,cash:START,lots:[],hist:[],last:today(),biz:[],wl:null,created:today(),dep:0,wd:0,wallet:0}}
+function kindOf(t){return /^Bought/.test(t)?'buy':/^Sold/.test(t)?'sell':/^(Deposit|Added)/.test(t)?'dep':/^(Withdraw|Cash out|Moved to)/.test(t)?'wd':/^Retired/.test(t)?'sell':'pay'}
 function migrate(s){
-  if(s.v>=3) return s;
+  if(s.v>=4) return s;
   if(!(s.v>=2)){
   s.hist=(s.hist||[]).map(h=>({...h,k:h.k||kindOf(h.t)}));
   const legacy=Object.fromEntries(LEGACY.map(b=>[b.id,b]));
@@ -86,10 +86,10 @@ function migrate(s){
   Object.assign(s,{dep:s.dep||0,wd:s.wd||0,wallet:s.wallet||0});
   }
   // v3: rename old wording in history, move single waitlist email into a list with source
-  s.hist=(s.hist||[]).map(h=>({...h,t:String(h.t).replace(/^Deposit ·/,'Added ·').replace(/^Withdraw ·/,'Cash out (practice) ·').replace(/simulated wallet/g,'Practice wallet').replace(/Pay[o]ut ·/,'Practice earnings ·')}));
+  s.hist=(s.hist||[]).map(h=>({...h,t:String(h.t).replace(/^Deposit ·/,'Added ·').replace(/^(Withdraw|Cash out \(practice\)) ·/,'Moved to practice wallet ·').replace(/simulated wallet/g,'Practice wallet').replace(/(Pay[o]ut|Practice earnings) ·/,'Practice score ·')}));
   s.wlList=s.wlList||(s.wl?[{email:s.wl,src:'unknown',at:0}]:[]);
   s.biz=(s.biz||[]).map(x=>({...x,src:x.src||'unknown'}));
-  return Object.assign(s,{v:3,src:s.src||null,ch:s.ch||null});
+  return Object.assign(s,{v:4,src:s.src||null,ch:s.ch||null});
 }
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&Number.isInteger(s.cash))return migrate(s)}catch(e){}return fresh()}
 function save(){localStorage.setItem(KEY,JSON.stringify(S))}
@@ -133,10 +133,10 @@ function render(){
   $('#streakN').textContent=st; $('#streak').classList.toggle('on',st>0);
   $('#week').innerHTML=[6,5,4,3,2,1,0].map(i=>`<i class="${c.includes(t-i)?'y':''} ${i===0?'t':''}"></i>`).join('');
   const p=pending(), btn=$('#collect'), lbl=btn.querySelector('.lbl');
-  if(p.n<=0){btn.disabled=true;lbl.textContent='Collected for today';$('#collectNote').textContent='Next daily practice earnings unlock tomorrow (Lagos time). Patience na virtue.';}
-  else if(!S.lots.length){btn.disabled=true;lbl.textContent='Buy slots to start earning';$('#collectNote').textContent='Slots you buy today start earning from tomorrow.';}
-  else{btn.disabled=false;lbl.textContent=`Collect ${p.n} day${p.n>1?'s':''} of practice earnings`;$('#collectNote').textContent='Simulated for learning. Results vary, nothing is guaranteed.';}
-  renderMarket(); renderPort(); renderAcct(); renderHist(); renderBoard(START+pl); renderChallenge();
+  if(p.n<=0){btn.disabled=true;lbl.textContent='Collected for today';$('#collectNote').textContent='Next Collect unlocks tomorrow (Lagos time). Patience na virtue.';}
+  else if(!S.lots.length){btn.disabled=true;lbl.textContent='Buy slots to start playing';$('#collectNote').textContent='Slots you buy today start scoring from tomorrow.';}
+  else{btn.disabled=false;lbl.textContent=p.n>1?`Collect ${p.n} days`:'Collect';$('#collectNote').textContent='Simulated for learning. Results vary, nothing is guaranteed.';}
+  renderMarket(); renderPort(); renderAcct(); renderHist(); renderChallenge();
 }
 function renderMarket(){
   const t=today(), st=$('#fState').value, ct=$('#fCat').value;
@@ -163,13 +163,13 @@ function renderPort(){
     `</table><p class="tiny muted">Total holdings: <b>${fmt(holdingsValue())}${PT}</b> · valuations fluctuate daily.</p></div>`;
 }
 const pc=(a,b)=>b?(a>=0?'+':'')+(a*100/b).toFixed(2)+'%':'—';
-const KL={dep:'Deposit',wd:'Withdraw',buy:'Buy',sell:'Sell',pay:'Practice earnings'};
+const KL={dep:'Added',wd:'To practice wallet',buy:'Buy',sell:'Sell',pay:'Practice score'};
 function renderAcct(){
   const p=pnl(), cls=p.total>=0?'up':'down', sg=x=>(x>=0?'+':'')+fmt(x);
   $('#pnl').innerHTML=`<div class="pbig ${cls}">${sg(p.total)}${PT} <span>${pc(p.total,p.contrib)}</span></div>
    <div class="kv"><div><small>realised</small><b class="${p.real>=0?'up':'down'}">${sg(p.real)}</b></div><div><small>unrealised</small><b class="${p.unreal>=0?'up':'down'}">${sg(p.unreal)}</b></div><div><small>holdings</small><b>${fmt(holdingsValue())}${PT}</b></div></div>
    <div class="kv"><div><small>practice credits</small><b>${fmt(S.cash)}${PT}</b></div><div><small>Practice wallet</small><b>${fmt(S.wallet)}${PT}</b></div><div><small>added practice credits</small><b>${fmt(S.dep)}${PT}</b></div></div>
-   <p class="tiny muted">P&amp;L = (credits + slots value + Practice wallet) − (₦500,000 starting credits + added practice credits). Realised = closed sells and daily practice earnings; unrealised = open slots at today's valuation.</p>`;
+   <p class="tiny muted">P&amp;L = (credits + slots value + Practice wallet) − (₦500,000 starting credits + added practice credits). Realised = closed sells and collected practice scores; unrealised = open slots at today's valuation.</p>`;
   const ids=[...new Set(S.lots.map(l=>l.id))];
   $('#pnlHold').innerHTML=ids.length?'<table><tr><th>Holding</th><th>Cost</th><th>Value</th><th>P&amp;L</th></tr>'+ids.map(id=>{const c=costBasis(id),v=held(id)*value(BYID[id],today());
     return `<tr><td>${esc(BYID[id].name)}</td><td>${fmt(c)}${PT}</td><td>${fmt(v)}${PT}</td><td class="${v>=c?'up':'down'}">${v>=c?'+':''}${fmt(v-c)} <span class="tiny">${pc(v-c,c)}</span></td></tr>`}).join('')+'</table>':'<p class="tiny muted">No open holdings, so no unrealised P&amp;L.</p>';
@@ -180,15 +180,6 @@ function renderHist(){
   $('#hist').innerHTML='<table><tr><th>Date</th><th>Type</th><th>What</th><th>Amount</th></tr>'+rows.slice(0,120).map(h=>
     `<tr><td class="rk">${new Date(h.d*864e5).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</td><td><span class="tag k-${h.k||kindOf(h.t)}">${KL[h.k||kindOf(h.t)]}</span></td><td>${esc(h.t)}</td><td class="${h.a>0?'up':h.a<0?'down':''}">${h.a>0?'+':''}${fmt(h.a)}${PT}</td></tr>`).join('')+'</table>';
 }
-const BOTS=['Chidi_Lagos','AmakaBuys','Musa.Kano','TundeOwnsAm','Ngozi PH','Halima_Abj','Emeka Big Boy','Zainab K','Seyi Hustle'];
-function renderBoard(nw){
-  const t=today(); const rows=BOTS.map((n,i)=>({n,v:START+Math.round((rng('bot'+i+t)()-.35)*N(60000))+i*N(1500)*((t%7)+1)}));
-  rows.push({n:'You',v:nw,me:1}); rows.sort((a,b)=>b.v-a.v);
-  $('#rank').textContent='#'+(rows.findIndex(r=>r.me)+1)+'/'+rows.length;
-  $('#lb').innerHTML='<div class="card"><p class="tiny muted">Practice leaderboard (sample players are simulated). *Score = ₦500,000 + your P&amp;L, so added practice credits do not count.</p><table><tr><th>#</th><th>Player</th><th>Score*</th></tr>'+
-    rows.map((r,i)=>`<tr class="${r.me?'me':''}"><td class="rk">${String(i+1).padStart(2,'0')}</td><td>${esc(r.n)}</td><td>${fmt(r.v)}${PT}</td></tr>`).join('')+'</table></div>';
-}
-
 function sheet(html){const m=$('#modal');m.innerHTML=`<div class="sheet">${html}</div>`;m.hidden=false}
 function closeSheet(){$('#modal').hidden=true}
 function qtySheet(b,mode){
@@ -197,7 +188,7 @@ function qtySheet(b,mode){
   sheet(`<h2>${mode==='buy'?'Buy':'Sell'} slots</h2><p class="muted">${esc(b.name)} · ${fmt(v)} per slot today</p>
   <div class="qty"><button data-q="-1">−</button><input id="q" type="number" min="1" max="${max}" value="1" inputmode="numeric"><button data-q="1">+</button></div>
   <p>Total: <b id="tot">${fmt(v)}</b>${PT} <span class="tiny muted">(practice credits, max ${max})</span></p>
-  ${mode==='buy'?'<p class="tiny muted">Earnings not guaranteed. Bad days can happen. Starts earning tomorrow.</p>':''}
+  ${mode==='buy'?'<p class="tiny muted">Practice scores vary and nothing is guaranteed. Bad days can happen. Starts scoring tomorrow.</p>':''}
   <div class="row"><button class="btn ghost" data-close>Cancel</button><button class="btn" style="flex:1" data-confirm>${mode==='buy'?'Confirm buy':'Confirm sell'}</button></div>`);
   const q=$('#q'), clamp=()=>{let n=parseInt(q.value,10);if(!Number.isInteger(n)||n<1)n=1;if(n>max)n=max;q.value=n;$('#tot').textContent=fmt(n*v);return n};
   q.oninput=clamp;
@@ -217,7 +208,7 @@ function burst(el){if(reduce)return;const r=el.getBoundingClientRect(),cx=r.left
   navigator.vibrate&&navigator.vibrate(18)}
 function collect(){
   const p=pending(); if(p.n<=0) return;
-  for(const day of p.days){ for(const [id,a] of agg(day.rows)) S.hist.unshift({d:day.d,t:`${a<0?'Bad day':a===0?'No sales':'Practice earnings'} · ${BYID[id].name}`,a,k:'pay'}); }
+  for(const day of p.days){ for(const [id,a] of agg(day.rows)) S.hist.unshift({d:day.d,t:`${a<0?'Bad day':a===0?'No sales':'Practice score'} · ${BYID[id].name}`,a,k:'pay'}); }
   S.cash+=p.total; S.last=today(); S.cd=[...(S.cd||[]).filter(d=>d>today()-60),today()]; save();
   const btn=$('#collect'); btn.classList.remove('pop'); void btn.offsetWidth; btn.classList.add('pop'); if(p.total>0) burst(btn);
   render(); $('#share').hidden=false;
@@ -238,16 +229,26 @@ addEventListener('resize',movePill);
 $('#collect').onclick=collect;
 const DEP_CAP=N(5000000);
 function deposit(n){if(S.dep+n>DEP_CAP)return toast('Practice credit limit is ₦5,000,000');S.cash+=n;S.dep+=n;S.hist.unshift({d:today(),t:`Added · ${fmt(n)} practice credits (free, not real money)`,a:n,k:'dep'});save();render();toast(`+${fmt(n)} practice credits added`)}
-function withdraw(n){if(!(n>0))return toast('Enter an amount');if(n>S.cash)return toast('Not enough practice credits');S.cash-=n;S.wallet+=n;S.wd+=n;S.hist.unshift({d:today(),t:`Cash out (practice) · ${fmt(n)} to Practice wallet`,a:-n,k:'wd'});save();render();toast(`${fmt(n)} moved to Practice wallet`)}
+function withdraw(n){if(!(n>0))return toast('Enter an amount');if(n>S.cash)return toast('Not enough practice credits');S.cash-=n;S.wallet+=n;S.wd+=n;S.hist.unshift({d:today(),t:`Moved to practice wallet · ${fmt(n)} to Practice wallet`,a:-n,k:'wd'});save();render();toast(`${fmt(n)} moved to Practice wallet`)}
 document.addEventListener('click',e=>{const d=e.target.closest('[data-dep]');if(d)deposit(N(+d.dataset.dep));const w=e.target.closest('[data-wd]');if(w)withdraw(w.dataset.wd==='all'?S.cash:N(+w.dataset.wd))});
 $('#wdForm').onsubmit=e=>{e.preventDefault();const v=Math.round(parseFloat($('#wdAmt').value)*100);withdraw(v);$('#wdAmt').value=''};
 $('#fState').innerHTML='<option value="">All 37 states</option>'+STATES.map(s=>{const n=BIZ.filter(b=>b.state===s).length;return `<option value="${s}">${s} (${n})</option>`}).join('');
 $('#fCat').innerHTML='<option value="">All categories</option>'+[...new Set(BIZ.map(b=>b.cat))].map(c=>`<option>${c}</option>`).join('');
 $('#bizState').innerHTML='<option value="" disabled selected>Choose state</option>'+STATES.map(s=>`<option>${s}</option>`).join('');
+$('#wlState').innerHTML='<option value="">State (optional)</option>'+STATES.map(s=>`<option>${s}</option>`).join('');
+document.querySelectorAll('#wlForm [name=kind]').forEach(r=>r.onchange=()=>{const o=$('#wlForm [name=kind]:checked').value==='owner';$('#wlTypeL').hidden=!o;$('#wlTypeL input').required=o});
 ['#fState','#fCat'].forEach(x=>$(x).onchange=renderMarket);$('#hFilter').onchange=renderHist;
 $('#reset').onclick=()=>{if(confirm('Reset your practice account? All practice slots and history will be cleared.')){S=fresh();save();render();toast('Fresh start: ₦500,000 practice credits')}};
-$('#bizForm').onsubmit=e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));S.biz.push({...f,src:SRC,at:Date.now()});save();e.target.reset();$('#bizMsg').textContent="Interest noted on this device only. Nothing is raised, sold or collected."};
-$('#wlForm').onsubmit=e=>{e.preventDefault();const em=new FormData(e.target).get('email');S.wl=em;S.wlList.push({email:em,src:SRC,at:Date.now()});save();e.target.reset();$('#wlMsg').textContent="You're on the early list (saved locally on this device only, interest only)."};
+const clip=(v,n)=>String(v||'').trim().slice(0,n)||null;
+async function cloudInsert(table,row){const sb=sbc();if(!sb)return false;try{const {error}=await sb.from(table).insert(row);return !error}catch(e){return false}}
+$('#bizForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));const btn=e.target.querySelector('button');btn.disabled=true;
+  const row={owner_name:clip(f.owner_name,100),business_name:clip(f.business_name,100),category:clip(f.category,80),state:clip(f.state,40),contact:clip(f.contact,200),about:clip(f.about,400),src:SRC};
+  const ok=await cloudInsert('business_interest',row);S.biz.push({name:row.business_name,type:row.category,state:row.state,src:SRC,at:Date.now(),synced:ok});save();e.target.reset();btn.disabled=false;
+  $('#bizMsg').textContent=ok?"Thanks, your interest is noted. Nothing is raised, sold or collected.":"Saved on this device for now (couldn't reach the server). Nothing is raised, sold or collected."};
+$('#wlForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));const btn=e.target.querySelector('button');btn.disabled=true;
+  const row={email:clip(f.email,200),name:clip(f.name,100),state:clip(f.state,40),kind:f.kind==='owner'?'owner':'curious',business_type:f.kind==='owner'?clip(f.business_type,80):null,src:SRC};
+  const ok=await cloudInsert('waitlist',row);S.wl=row.email;S.wlList.push({email:row.email,kind:row.kind,src:SRC,at:Date.now(),synced:ok});save();e.target.reset();$('#wlTypeL').hidden=true;btn.disabled=false;
+  $('#wlMsg').textContent=ok?"You're on the early list. Interest only, nothing is sold.":"Saved on this device for now (couldn't reach the server)."};
 // Theme: follows system by default, remembers explicit choice
 const TKEY='koboShare.theme', root=document.documentElement;
 function setTheme(t){root.dataset.theme=t;document.querySelector('meta[name=theme-color]').content=t==='light'?'#f4f6f5':'#05070a'}
@@ -257,7 +258,7 @@ matchMedia('(prefers-color-scheme: light)').addEventListener('change',e=>{if(!lo
 save(); requestAnimationFrame(movePill);
 setTimeout(()=>{$('#listings').classList.add('first');render();movePill();setTimeout(()=>$('#listings').classList.remove('first'),1200)}, reduce?0:350); // brief shimmer skeleton on first paint
 
-// ---- Weekly challenge (practice, simulated board) ----
+// ---- Weekly challenge (practice, practice only) ----
 const wk=()=>Math.floor((today()+3)/7); // week index, weeks start Monday (Lagos)
 function chState(){if(!S.ch||S.ch.w!==wk())S.ch={w:wk(),picks:[]};return S.ch}
 function pick(id){const c=chState();if(c.picks.find(p=>p.id===id))return;if(c.picks.length>=3)return toast('You already picked 3 this week');
@@ -270,11 +271,6 @@ function renderChallenge(){
   $('#chPicks').innerHTML=c.picks.map(p=>{const b=BYID[p.id],ch=(value(b,today())-p.v)*100/p.v;return `<div class="row chp"><span>${esc(b.name)}</span><b class="${ch>=0?'up':'down'}">${ch>=0?'+':''}${ch.toFixed(2)}%</b></div>`}).join('')+
    (c.picks.length<3?`<div class="row"><select id="chSel" style="flex:1;margin:0">${opts}</select><button class="btn" id="chAdd">Pick (${c.picks.length}/3)</button></div>`:`<p class="tiny muted">Your 3 picks are locked in. Score: <b>${chScore(c).toFixed(2)}%</b></p>`);
   const add=$('#chAdd'); if(add) add.onclick=()=>pick($('#chSel').value);
-  const rows=BOTS.map((n,i)=>({n,s:Math.round((rng('ch'+i+wk()+':'+today())()-.45)*800)/100}));
-  if(c.picks.length) rows.push({n:'You',s:Math.round(chScore(c)*100)/100,me:1});
-  rows.sort((a,b)=>b.s-a.s);
-  $('#chBoard').innerHTML='<div class="card"><h2>This week\'s board</h2><p class="tiny muted">Sample players are simulated. Practice only, no prizes.</p><table><tr><th>#</th><th>Player</th><th>Result</th></tr>'+
-   rows.map((r,i)=>`<tr class="${r.me?'me':''}"><td class="rk">${String(i+1).padStart(2,'0')}</td><td>${esc(r.n)}</td><td class="${r.s>=0?'up':'down'}">${r.s>=0?'+':''}${r.s.toFixed(2)}%</td></tr>`).join('')+'</table></div>';
 }
 setInterval(()=>{const e=$('#cdown');if(e&&$('#challenge').classList.contains('on'))renderChallenge()},30000);
 
@@ -288,10 +284,10 @@ function makeCard(){
   g.strokeStyle=ac;g.lineWidth=16;g.beginPath();g.arc(130,140,40,0,7);g.stroke();
   g.fillStyle=fg;g.font='700 56px Inter,sans-serif';g.fillText('kobo share',200,160);
   g.fillStyle='#ffb547';g.fillRect(80,240,560,64);g.fillStyle='#05070a';g.font='600 32px "JetBrains Mono",monospace';g.fillText('PRACTICE · NO REAL MONEY',100,284);
-  const wp=weekPct(),rk=$('#rank').textContent,st=streak();
+  const wp=weekPct(),st=streak();
   g.fillStyle=mu;g.font='500 40px Inter,sans-serif';g.fillText('My practice portfolio this week',80,420);
   g.fillStyle=wp>=0?ac:'#ff5c7a';g.font='800 150px Inter,sans-serif';g.fillText((wp>=0?'+':'')+wp.toFixed(2)+'%',80,580);
-  g.fillStyle=fg;g.font='600 52px Inter,sans-serif';g.fillText(`rank ${rk}  ·  streak ${st} day${st===1?'':'s'}`,80,700);
+  g.fillStyle=fg;g.font='600 52px Inter,sans-serif';g.fillText(`streak ${st} day${st===1?'':'s'}`,80,700);
   g.fillStyle=mu;g.font='400 31px Inter,sans-serif';g.fillText('A game for learning how owning a piece of a business works.',80,820);g.fillText('Fictional businesses. Not an investment.',80,870);
   g.fillStyle=ac;g.font='500 34px "JetBrains Mono",monospace';g.fillText(SITE.replace('https://',''),80,980);
   return c;
@@ -305,12 +301,73 @@ async function shareCard(){
 $('#share').onclick=shareCard;
 if(S.last===today()&&(S.cd||[]).includes(today()))$('#share').hidden=false;
 
-// ---- Admin view (?admin=1): counts by source, local data only ----
-if(QS.get('admin')==='1'){
-  const cnt=a=>a.reduce((m,x)=>(m[x.src||'unknown']=(m[x.src||'unknown']||0)+1,m),{});
-  const wl=cnt(S.wlList),bz=cnt(S.biz),keys=[...new Set([...Object.keys(wl),...Object.keys(bz)])];
-  const d=document.createElement('section');d.className='card admin';d.id='admin';
-  d.innerHTML=`<h2>Admin · sign-ups by source</h2><p class="tiny muted">Local only: these counts come from this browser's localStorage, not a server. Current visit source: <b>${esc(SRC)}</b>.</p>`+
-   (keys.length?'<table><tr><th>Source</th><th>Early list</th><th>Business interest</th></tr>'+keys.map(k=>`<tr><td>${esc(k)}</td><td>${wl[k]||0}</td><td>${bz[k]||0}</td></tr>`).join('')+`<tr><td><b>Total</b></td><td><b>${S.wlList.length}</b></td><td><b>${S.biz.length}</b></td></tr></table>`:'<p class="tiny muted">No entries yet.</p>');
-  document.querySelector('main').prepend(d);
+// ---- Supabase: auth (magic link), profile sync, stats. Public anon/publishable key only. ----
+const SB_URL='https://ivxvzvpyybpdxtcoimoh.supabase.co', SB_KEY='sb_publishable_5qqey8hErQUyQfg-0TapTw_OsznH3Sp', OWNER='usmanzahra19@gmail.com';
+let _sb=null, USER=null;
+function sbc(){if(_sb)return _sb;try{if(window.supabase&&window.supabase.createClient)_sb=window.supabase.createClient(SB_URL,SB_KEY)}catch(e){}return _sb}
+const isOwner=()=>!!USER&&(USER.email||'').toLowerCase()===OWNER;
+function authUI(){$('#authBtn').textContent=USER?'Account':'Log in'}
+$('#authBtn').onclick=()=>{
+  if(USER){sheet(`<h2>Your account</h2><p class="muted">Signed in as <b>${esc(USER.email)}</b>. Your practice progress syncs to your account.</p>
+    <div class="row"><button class="btn ghost" data-close>Close</button><button class="btn" style="flex:1" id="logout">Log out</button></div>`);
+    $('#logout').onclick=async()=>{await sbc().auth.signOut();USER=null;authUI();closeSheet();toast('Logged out. Local play continues on this device.')};
+  }else{sheet(`<h2>Sign up / Log in</h2><p class="muted">Free. We only ask for your name and email, never revenue or bank details. We'll email you a one-tap login link. Playing without an account still works on this device.</p>
+    <form id="authForm"><label>Name<input name="name" maxlength="100" autocomplete="name" placeholder="Needed for new accounts"></label><label>Email<input name="email" type="email" required maxlength="200" autocomplete="email"></label>
+    <div class="row"><button type="button" class="btn ghost" data-close>Cancel</button><button class="btn" style="flex:1">Email me a login link</button></div></form><p id="authMsg" class="ok"></p>
+    <p class="tiny muted priv">We use your name and email only to contact you about Kobo Share and to save your practice progress. We never sell it. Handled in line with the NDPA 2023. Email usmanzahra19@gmail.com to delete it.</p>`);
+    $('#authForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));const sb=sbc();if(!sb)return $('#authMsg').textContent='Login is unavailable right now. Local play still works.';
+      const {error}=await sb.auth.signInWithOtp({email:f.email.trim(),options:{emailRedirectTo:location.origin+location.pathname,data:{name:clip(f.name,100),src:SRC}}});
+      $('#authMsg').textContent=error?'Could not send the link: '+error.message:'Check your email for the login link.'};
+  }
+  $('#modal').onclick=e=>{if(e.target===$('#modal')||e.target.dataset.close!==undefined)closeSheet()};
+};
+let syncT=null;
+function pushState(){if(!USER||!sbc())return;clearTimeout(syncT);syncT=setTimeout(()=>sbc().from('profiles').update({practice_state:S,updated_at:new Date().toISOString()}).eq('id',USER.id).then(()=>{}),1500)}
+const _save=save; save=function(){S.updatedAt=Date.now();_save();pushState()};
+async function onLogin(user){
+  USER=user;authUI();const sb=sbc();
+  try{const {data}=await sb.from('profiles').select('practice_state,src').eq('id',user.id).maybeSingle();
+    const remote=data&&data.practice_state;
+    if(remote&&Number.isInteger(remote.cash)&&(remote.updatedAt||0)>(S.updatedAt||0)){S=migrate(remote);_save();render();toast('Practice progress loaded from your account')}
+    else pushState();
+    if(data&&!data.src) sb.from('profiles').update({src:SRC}).eq('id',user.id).then(()=>{});
+  }catch(e){}
+  if($('#admin'))renderAdmin();
 }
+async function renderStats(){
+  const box=$('#statsBox'),sb=sbc(),D='—';let s=null;
+  if(sb){try{const r=await sb.rpc('kobo_stats');if(!r.error)s=r.data}catch(e){}}
+  const v=x=>x===null||x===undefined?D:Number(x).toLocaleString('en-NG');
+  const cat={};let mk='';
+  if(s&&s.market){for(const m of s.market){const b=BYID[m.id];if(b)cat[b.cat]=(cat[b.cat]||0)+m.slots}
+    mk=s.market.filter(m=>BYID[m.id]).slice(0,6).map((m,i)=>`<tr><td class="rk">${String(i+1).padStart(2,'0')}</td><td>${esc(BYID[m.id].name)}<span class="tag">example</span></td><td>${v(m.slots)}</td></tr>`).join('')}
+  const cats=Object.entries(cat).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const list=(arr)=>arr&&arr.length?'<table>'+arr.map(r=>`<tr><td>${esc(r.k)}</td><td>${v(r.n)}</td></tr>`).join('')+'</table>':`<p class="tiny muted">${D}</p>`;
+  let html=`<div class="card"><h2>Practice market <span class="tag">practice</span></h2><p class="tiny muted">Totals across signed-in players. Fictional example businesses, practice credits only.</p>
+    <div class="kv"><div><small>slots bought</small><b>${v(s&&s.slots_bought)}</b></div><div><small>top category</small><b>${cats[0]?esc(cats[0][0]):D}</b></div></div>
+    <h3 class="sub">Most-owned example businesses</h3>${mk?'<table><tr><th>#</th><th>Business</th><th>Slots</th></tr>'+mk+'</table>':`<p class="tiny muted">${D}</p>`}
+    <h3 class="sub">Top categories</h3>${cats.length?'<table>'+cats.map(([k,n])=>`<tr><td>${esc(k)}</td><td>${v(n)}</td></tr>`).join('')+'</table>':`<p class="tiny muted">${D}</p>`}</div>`;
+  if(s&&s.community){html+=`<div class="card"><h2>Community${s.is_owner?' <span class="tag">owner view</span>':''}</h2>
+    <div class="kv"><div><small>players signed up</small><b>${v(s.players)}</b></div><div><small>early list</small><b>${v(s.waitlist)}</b></div><div><small>business owners interested</small><b>${s.owners===null?'Soon':v(s.owners)}</b></div></div>
+    <h3 class="sub">Sign-ups by state</h3>${list(s.by_state)}<h3 class="sub">Owners by business category</h3>${list(s.by_category)}
+    <p class="tiny muted">Counts only, no personal data. Groups smaller than 5 are combined into “Other”.</p></div>`}
+  else html+=`<div class="card"><h2>Community</h2><p class="muted">Community numbers coming soon.</p></div>`;
+  box.innerHTML=html;
+}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-tab=stats]');if(t)renderStats()});
+// ---- Admin view (?admin=1) ----
+async function renderAdmin(){
+  let d=$('#admin');if(!d){d=document.createElement('section');d.className='card admin';d.id='admin';document.querySelector('main').prepend(d)}
+  const cnt=a=>a.reduce((m,x)=>(m[x.src||'unknown']=(m[x.src||'unknown']||0)+1,m),{});
+  let wl=cnt(S.wlList),bz=cnt(S.biz),note=`Local only: counts from this browser's localStorage. Log in as the owner to see live counts, or open the Supabase dashboard (project kobo-share, tables waitlist and business_interest).`;
+  if(isOwner()){try{const [a,b]=await Promise.all([sbc().from('waitlist').select('src'),sbc().from('business_interest').select('src')]);
+    if(!a.error&&!b.error){wl=cnt(a.data);bz=cnt(b.data);note='Live counts from Supabase (owner only).'}}catch(e){}}
+  const keys=[...new Set([...Object.keys(wl),...Object.keys(bz)])],tot=o=>Object.values(o).reduce((x,y)=>x+y,0);
+  d.innerHTML=`<h2>Admin · sign-ups by source</h2><p class="tiny muted">${note} Current visit source: <b>${esc(SRC)}</b>.</p>`+
+   (keys.length?'<table><tr><th>Source</th><th>Early list</th><th>Business interest</th></tr>'+keys.map(k=>`<tr><td>${esc(k)}</td><td>${wl[k]||0}</td><td>${bz[k]||0}</td></tr>`).join('')+`<tr><td><b>Total</b></td><td><b>${tot(wl)}</b></td><td><b>${tot(bz)}</b></td></tr></table>`:'<p class="tiny muted">No entries yet.</p>');
+}
+if(QS.get('admin')==='1')renderAdmin();
+(function initAuth(){const sb=sbc();if(!sb)return;
+  sb.auth.getSession().then(({data})=>{if(data&&data.session)onLogin(data.session.user)});
+  sb.auth.onAuthStateChange((ev,session)=>{if(ev==='SIGNED_IN'&&session&&(!USER||USER.id!==session.user.id))onLogin(session.user);if(ev==='SIGNED_OUT'){USER=null;authUI()}});
+})();

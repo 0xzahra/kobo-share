@@ -15,6 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 </head>
 <body>
 <div class="grain" aria-hidden="true"></div>
@@ -23,6 +24,7 @@
   <div class="brand"><span class="logo" aria-hidden="true"></span><span>kobo<b>share</b></span><span class="pchip mono" title="Practice mode · No real money">Practice · No real money</span></div>
   <div class="topr">
     <div class="wallet"><small class="mono">practice credits</small><strong><span id="cash">—</span><span class="ptag">Practice</span></strong></div>
+    <button id="authBtn" class="btn ghost tiny authb">Log in</button>
     <button id="theme" class="theme" aria-label="Toggle dark or light mode"><span class="knob"></span></button>
   </div>
 </header>
@@ -33,11 +35,10 @@
     <p class="lede">A game for learning how owning a piece of a business works. Every business here is a <b>fictional example</b>, and every naira is a practice credit.</p>
     <div class="chips">
       <span class="chip" id="pl">—</span>
-      <span class="chip"><span class="mono">rank</span> <b id="rank">—</b></span>
       <span class="chip streak" id="streak"><i class="flame"></i><b id="streakN">0</b> <span class="mono">day streak</span></span>
     </div>
     <div class="week" id="week" aria-label="Last 7 days collected"></div>
-    <button id="collect" class="btn collect"><span class="lbl">Collect today's practice earnings</span></button>
+    <button id="collect" class="btn collect"><span class="lbl">Collect</span></button>
     <p id="collectNote" class="muted tiny"></p>
     <button id="share" class="btn ghost tiny" hidden>Share my practice card</button>
     <p class="tag-line">Own am small small.</p>
@@ -49,13 +50,13 @@
     <button data-tab="portfolio"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4v8l6 4"/></svg><span>My slots</span></button>
     <button data-tab="account"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M16 15h2"/></svg><span>Account</span></button>
     <button data-tab="challenge"><svg viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0zM12 13v4M8 20h8M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4"/></svg><span>Challenge</span></button>
-    <button data-tab="board"><svg viewBox="0 0 24 24"><path d="M5 20V12M12 20V5M19 20v-5"/></svg><span>Board</span></button>
+    <button data-tab="stats"><svg viewBox="0 0 24 24"><path d="M5 20V12M12 20V5M19 20v-5"/></svg><span>Stats</span></button>
     <button data-tab="list"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>Early list</span></button>
   </nav>
 
   <div class="panes">
   <section id="market" class="tab on">
-    <p class="muted tiny">Every listing is a <b>fictional example</b>, not a real business. Daily practice earnings are simulated ranges for learning, nothing is guaranteed.</p>
+    <p class="muted tiny">Every listing is a <b>fictional example</b>, not a real business. Today's practice score per slot is a simulated range for learning, nothing is guaranteed.</p>
     <div class="filters"><label>State<select id="fState" aria-label="Filter by state"></select></label><label>Category<select id="fCat" aria-label="Filter by category"></select></label></div>
     <p id="mCount" class="tiny muted mono"></p>
     <div id="listings" class="grid"><div class="card sk"></div><div class="card sk"></div><div class="card sk"></div><div class="card sk"></div></div>
@@ -67,36 +68,49 @@
     <div class="card"><h2>Add practice credits <span class="tag">practice</span></h2>
       <p class="muted tiny">Top up with free practice credits. No bank, no card, no real money, ever.</p>
       <div class="presets"><button class="btn ghost" data-dep="50000">+₦50k practice</button><button class="btn ghost" data-dep="100000">+₦100k practice</button><button class="btn ghost" data-dep="250000">+₦250k practice</button><button class="btn ghost" data-dep="500000">+₦500k practice</button></div>
-      <p class="tiny muted">Added practice credits are capped at ₦5,000,000 and don't count toward your P&amp;L or Board score.</p></div>
-    <div class="card"><h2>Cash out (practice) <span class="tag">practice</span></h2>
+      <p class="tiny muted">Added practice credits are capped at ₦5,000,000 and don't count toward your P&amp;L score.</p></div>
+    <div class="card"><h2>Move to practice wallet <span class="tag">practice</span></h2>
       <p class="muted tiny">Move practice credits to your <b>Practice wallet</b>. Nothing leaves this app and it is never real money.</p>
       <div class="presets"><button class="btn ghost" data-wd="25000">₦25k</button><button class="btn ghost" data-wd="100000">₦100k</button><button class="btn ghost" data-wd="all">All credits</button></div>
-      <form id="wdForm" class="row"><input id="wdAmt" type="number" min="1" step="1" inputmode="numeric" placeholder="Amount (₦ practice)"><button class="btn">Cash out (practice)</button></form></div>
+      <form id="wdForm" class="row"><input id="wdAmt" type="number" min="1" step="1" inputmode="numeric" placeholder="Amount (₦ practice)"><button class="btn">Move to practice wallet</button></form></div>
     </div>
-    <div class="card"><div class="row" style="justify-content:space-between"><h2>Transactions</h2><select id="hFilter" style="width:auto;margin:0"><option value="">All</option><option value="dep">Added credits</option><option value="wd">Cash outs (practice)</option><option value="buy">Buys</option><option value="sell">Sells</option><option value="pay">Daily practice earnings</option></select></div><div id="hist"></div></div>
+    <div class="card"><div class="row" style="justify-content:space-between"><h2>Transactions</h2><select id="hFilter" style="width:auto;margin:0"><option value="">All</option><option value="dep">Added credits</option><option value="wd">Moved to practice wallet</option><option value="buy">Buys</option><option value="sell">Sells</option><option value="pay">Practice scores</option></select></div><div id="hist"></div></div>
   </section>
   <section id="challenge" class="tab"><div class="card"><h2>Weekly challenge <span class="tag">practice</span></h2>
       <p class="muted">Pick 3 businesses this week. Best practice result wins. Score = average % change in slot value since you picked. Bragging rights only, no prizes.</p>
-      <p class="mono tiny">Ends in <b id="cdown">—</b> (Monday 00:00 Lagos time)</p><div id="chPicks"></div></div><div id="chBoard"></div></section>
-  <section id="board" class="tab"><div id="lb"></div></section>
+      <p class="mono tiny">Ends in <b id="cdown">—</b> (Monday 00:00 Lagos time)</p><div id="chPicks"></div></div></section>
+  <section id="stats" class="tab"><div id="statsBox"><div class="card"><p class="muted">Loading stats…</p></div></div></section>
   <section id="list" class="tab">
     <div class="card">
       <h2>Own a business? Join the early list</h2>
-      <p class="muted">Interest only, for a possible future licensed version. <b>Nothing is being raised or sold, no money is collected</b>, and no business is listed on Kobo Share. This form saves <b>on this device only (localStorage)</b>; nothing is sent anywhere.</p>
+      <p class="muted">Interest only, for a possible future licensed version. <b>Nothing is being raised or sold, no money is collected</b>, and no business is listed on Kobo Share. Never send revenue or bank details.</p>
       <form id="bizForm">
-        <label>Business name<input name="name" required maxlength="60"></label>
-        <label>Type<input name="type" required placeholder="e.g. Poultry farm, phone shop" maxlength="60"></label>
+        <label>Your name<input name="owner_name" required maxlength="100" autocomplete="name"></label>
+        <label>Business name<input name="business_name" required maxlength="100"></label>
+        <label>Category<input name="category" required placeholder="e.g. Poultry farm, phone shop" maxlength="80"></label>
         <label>State<select name="state" id="bizState" required></select></label>
-        <label>About the business<textarea name="about" rows="3" maxlength="400"></textarea></label>
+        <label>Contact email or phone<input name="contact" required maxlength="200" autocomplete="email"></label>
+        <label>About the business (optional)<textarea name="about" rows="3" maxlength="400"></textarea></label>
         <button class="btn">Register interest</button>
       </form>
       <p id="bizMsg" class="ok"></p>
+      <p class="tiny muted priv">We use your name and contact details only to contact you about Kobo Share. We never sell them. Handled in line with the Nigeria Data Protection Act (NDPA) 2023. Email <a href="mailto:usmanzahra19@gmail.com">usmanzahra19@gmail.com</a> to see or delete your data.</p>
     </div>
     <div class="card">
       <h2>Join the early list</h2>
-      <p class="muted">Interest only for a possible future licensed version. Nothing is being sold and no money is collected. Your email is <b>stored locally on this device only</b> and is not sent anywhere.</p>
-      <form id="wlForm" class="row"><input type="email" name="email" required placeholder="you@email.com"><button class="btn">Join early list</button></form>
+      <p class="muted">Interest only for a possible future licensed version. Nothing is being sold and no money is collected.</p>
+      <form id="wlForm">
+        <label>Name<input name="name" required maxlength="100" autocomplete="name"></label>
+        <label>Email<input type="email" name="email" required maxlength="200" placeholder="you@email.com" autocomplete="email"></label>
+        <label>State<select name="state" id="wlState"></select></label>
+        <fieldset class="kind"><legend>Which one are you?</legend>
+          <label class="radio"><input type="radio" name="kind" value="owner" required> I'm a business owner</label>
+          <label class="radio"><input type="radio" name="kind" value="curious" required> I'm just curious</label></fieldset>
+        <label id="wlTypeL" hidden>Business type<input name="business_type" maxlength="80" placeholder="e.g. Salon, provisions shop"></label>
+        <button class="btn">Join early list</button>
+      </form>
       <p id="wlMsg" class="ok"></p>
+      <p class="tiny muted priv">We use your name and contact details only to contact you about Kobo Share. We never sell them. Handled in line with the Nigeria Data Protection Act (NDPA) 2023. Email <a href="mailto:usmanzahra19@gmail.com">usmanzahra19@gmail.com</a> to see or delete your data.</p>
     </div>
   </section>
   </div>
@@ -106,10 +120,10 @@
     <ol>
       <li>You get <b>₦500,000 practice credits</b>. Free, not real money.</li>
       <li>Buy practice slots in fictional example businesses to learn how owning a piece of a business works.</li>
-      <li>Come back every real day to <b>collect daily practice earnings</b>. Some days good, some days na loss, like real life.</li>
+      <li>Come back every real day to <b>Collect</b> today's practice score. Some days good, some days na loss, like real life.</li>
       <li>Sell slots back anytime at the current valuation. It moves up and down.</li>
-      <li>Track your P&amp;L, add practice credits or cash out (practice) in Account. None of it is real money.</li>
-      <li>Grow your net worth and climb the board.</li>
+      <li>Track your P&amp;L, add practice credits or move them to your practice wallet in Account. None of it is real money.</li>
+      <li>Grow your practice net worth and see what the community is doing in Stats.</li>
     </ol>
     <button id="reset" class="btn ghost tiny">Reset my practice account</button>
   </section>
@@ -117,6 +131,6 @@
 <footer><b>Practice game only.</b> No real money is used, collected or paid. All businesses are fictional examples. Kobo Share is not an investment, not an offer or solicitation, and is not registered with the SEC Nigeria. Early-list sign-ups are interest only and stored on your device.</footer>
 <div id="modal" class="modal" hidden></div>
 <div id="toast" class="toast" hidden></div>
-<script src="app.js"></script>
+<script src="app.js" defer></script>
 </body>
 </html>

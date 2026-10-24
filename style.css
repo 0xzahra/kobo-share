@@ -119,3 +119,12 @@ footer{text-align:center;font-size:12px;color:var(--m);padding:20px 24px 30px;ma
 .admin{border-color:#ffb547}
 footer{line-height:1.5}
 .banner{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;height:33px;box-sizing:border-box}@media(max-width:560px){.bx{display:none}}
+
+.authb{padding:6px 12px;min-height:0;width:auto}
+.priv{margin-top:10px;line-height:1.45}.priv a{color:inherit}
+fieldset.kind{border:1px solid var(--line);border-radius:14px;padding:8px 12px;margin:8px 0}
+fieldset.kind legend{font-size:12px;color:var(--m);padding:0 4px}
+label.radio{display:flex;align-items:center;gap:8px;font-size:14px;margin:6px 0}label.radio input{width:auto;margin:0}
+h3.sub{font-size:13px;margin:14px 0 6px;color:var(--m);font-weight:600}
+[hidden]{display:none!important}
+.authb{white-space:nowrap;padding:5px 10px!important;font-size:12px!important}@media(max-width:420px){.topr{gap:8px}.wallet strong{font-size:13px}.wallet small{font-size:9px}.brand{font-size:15px}}
