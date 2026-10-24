@@ -304,10 +304,10 @@ $('#share').onclick=shareCard;
 if(S.last===today()&&(S.cd||[]).includes(today()))$('#share').hidden=false;
 
 // ---- Supabase: auth (magic link), profile sync, stats. Public anon/publishable key only. ----
-const SB_URL='https://ivxvzvpyybpdxtcoimoh.supabase.co', SB_KEY='sb_publishable_5qqey8hErQUyQfg-0TapTw_OsznH3Sp', OWNER='usmanzahra19@gmail.com';
+const SB_URL='https://ivxvzvpyybpdxtcoimoh.supabase.co', SB_KEY='sb_publishable_5qqey8hErQUyQfg-0TapTw_OsznH3Sp', OWNER_H='44c08519ed505f4058d6ce52b130bacbf9cf081daedde6565c74e946bd0b32fe';
 let _sb=null, USER=null;
 function sbc(){if(_sb)return _sb;try{if(window.supabase&&window.supabase.createClient)_sb=window.supabase.createClient(SB_URL,SB_KEY)}catch(e){}return _sb}
-const isOwner=()=>!!USER&&(USER.email||'').toLowerCase()===OWNER;
+async function isOwner(){if(!USER||!USER.email||!crypto.subtle)return false;const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(USER.email.toLowerCase().trim()));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')===OWNER_H}
 async function renderStats(){
   const box=$('#statsBox'),sb=sbc(),D='—';let s=null;
   if(sb){try{const r=await sb.rpc('kobo_stats');if(!r.error)s=r.data}catch(e){}}
@@ -347,7 +347,7 @@ $('#authBtn').onclick=()=>{
   <div class="srow"><span>Dark / light</span><button class="theme" id="thBtn" aria-label="Toggle dark or light mode"><span class="knob"></span></button></div>
   <div class="srow"><span>Share my practice card</span><button class="btn ghost tiny" id="shBtn">Share</button></div>
   <div class="srow"><span>Reset practice account</span><button class="btn ghost tiny" id="rsBtn">Reset</button></div>
-  <p class="tiny muted" style="margin-top:14px">Kobo Share records your email and in-app activity to run and improve Kobo Share. Never sold. NDPA 2023. To delete your data, email <a href="mailto:usmanzahra19@gmail.com">usmanzahra19@gmail.com</a>.</p>
+  <p class="tiny muted" style="margin-top:14px">Kobo Share records your email and in-app activity to run and improve Kobo Share. Never sold. Handled in line with the NDPA 2023. To delete your data or get support, message <a href="https://x.com/0xarewah" target="_blank" rel="noopener">X @0xarewah</a> or <a href="https://t.me/Oxarewah" target="_blank" rel="noopener">Telegram @Oxarewah</a>.</p>
   <div class="row"><button class="btn ghost" data-close>Close</button><button class="btn" style="flex:1" id="logout">Log out</button></div>`);
   $('#thBtn').onclick=toggleTheme; $('#shBtn').onclick=shareCard; $('#rsBtn').onclick=resetAcct;
   $('#logout').onclick=async()=>{track('sign_out');await sbc().auth.signOut();location.reload()};
@@ -396,7 +396,7 @@ async function onLogin(user){
 // ---- Owner view (?admin=1, owner account only) ----
 async function renderAdmin(){
   let d=$('#admin');if(!d){d=document.createElement('section');d.className='admin';d.id='admin';$('#home').prepend(d)}
-  if(!isOwner()){d.innerHTML='<p class="tiny muted">Owner view: sign in as the owner to see records.</p>';return}
+  if(!(await isOwner())){d.innerHTML='<p class="tiny muted">Owner view: sign in as the owner to see records.</p>';return}
   let a=null;try{const r=await sbc().rpc('kobo_admin');if(!r.error)a=r.data}catch(e){}
   if(!a){d.innerHTML='<p class="tiny muted">Could not load owner data.</p>';return}
   const dt=x=>x?new Date(x).toLocaleString('en-GB',{timeZone:'Africa/Lagos',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'—';
@@ -412,3 +412,7 @@ async function renderAdmin(){
   sb.auth.onAuthStateChange((ev,session)=>{if(session&&(!USER||USER.id!==session.user.id)){done=true;onLogin(session.user)}});
   sb.auth.getSession().then(({data})=>{if(data&&data.session&&!done)onLogin(data.session.user,false)});
 })();
+
+// ---- Privacy sheet (gate link) ----
+const PRIV_HTML='Kobo Share records your email and in-app activity to run and improve Kobo Share. Never sold. Handled in line with the NDPA 2023. To delete your data or get support, message <a href="https://x.com/0xarewah" target="_blank" rel="noopener">X @0xarewah</a> or <a href="https://t.me/Oxarewah" target="_blank" rel="noopener">Telegram @Oxarewah</a>.';
+document.getElementById('gPriv').onclick=e=>{e.preventDefault();sheet(`<h2>Privacy</h2><p class="tiny muted">${PRIV_HTML}</p><p class="tiny muted">Practice game only. No real money is used, collected or paid. All businesses are fictional examples. Not an investment, not an offer or solicitation, and not registered with the SEC Nigeria.</p><div class="row"><button class="btn" style="flex:1" data-close>Close</button></div>`);$('#modal').onclick=ev=>{if(ev.target===$('#modal')||ev.target.dataset.close!==undefined)closeSheet()}};
