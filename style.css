@@ -102,3 +102,9 @@ footer{text-align:center;font-size:12px;color:var(--m);padding:20px 24px 30px;ma
 @keyframes burst{to{transform:translate(var(--x),var(--y)) scale(.3);opacity:0}}
 @media(min-width:900px){.tabs{position:sticky;top:64px;bottom:auto;transform:none;left:auto;margin:0 auto 20px}.tabs button{flex-direction:row;font-size:13px;gap:7px;padding:10px}body{padding-bottom:0}.tabs svg{width:16px;height:16px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+.filters{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 4px}.filters label{font-size:12px;color:var(--m)}
+.pbig{font-size:34px;font-weight:800;letter-spacing:-.04em;margin:6px 0 12px;font-variant-numeric:tabular-nums}.pbig span{font-size:16px;font-weight:600}
+.presets{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.presets .btn{padding:10px 14px;font-size:14px}
+.acct2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}.acct2 .card{margin:0 0 14px}
+#pnlHold td,#hist td{font-size:13px}.k-dep,.k-pay{color:var(--a)}.k-wd,.k-buy{color:var(--a2)}.k-sell{color:#ffb547}
+#account .tag{margin-left:0}

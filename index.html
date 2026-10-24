@@ -6,7 +6,7 @@
 <title>Kobo Share — Own am small small (practice app)</title>
 <meta name="description" content="Practice owning fractional slots of everyday Nigerian businesses with ₦500,000 free practice credits. No real money.">
 <meta property="og:title" content="Kobo Share — Own am small small">
-<meta property="og:description" content="Practice owning slots of Lagos, Kano, Abuja & PH businesses with free practice credits. No real money, just learn the game.">
+<meta property="og:description" content="Practice owning slots of example businesses across all 36 states + FCT with free practice credits. No real money, just learn the game.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://0xzahra.github.io/kobo-share/">
 <meta name="theme-color" content="#05070a">
@@ -45,7 +45,7 @@
     <span class="pill" aria-hidden="true"></span>
     <button data-tab="market" class="on"><svg viewBox="0 0 24 24"><path d="M4 10h16v10H4zM3 10l2-6h14l2 6"/></svg><span>Market</span></button>
     <button data-tab="portfolio"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4v8l6 4"/></svg><span>My slots</span></button>
-    <button data-tab="history"><svg viewBox="0 0 24 24"><path d="M4 18l5-6 4 3 7-9"/></svg><span>Payouts</span></button>
+    <button data-tab="account"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M16 15h2"/></svg><span>Account</span></button>
     <button data-tab="board"><svg viewBox="0 0 24 24"><path d="M5 20V12M12 20V5M19 20v-5"/></svg><span>Board</span></button>
     <button data-tab="list"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>List biz</span></button>
   </nav>
@@ -53,10 +53,25 @@
   <div class="panes">
   <section id="market" class="tab on">
     <p class="muted tiny">Listings are <b>illustrative examples</b>, not real businesses. Earnings are ranges and <b>not guaranteed</b>.</p>
+    <div class="filters"><label>State<select id="fState" aria-label="Filter by state"></select></label><label>Category<select id="fCat" aria-label="Filter by category"></select></label></div>
+    <p id="mCount" class="tiny muted mono"></p>
     <div id="listings" class="grid"><div class="card sk"></div><div class="card sk"></div><div class="card sk"></div><div class="card sk"></div></div>
   </section>
   <section id="portfolio" class="tab"><div id="port"></div></section>
-  <section id="history" class="tab"><div id="hist"></div></section>
+  <section id="account" class="tab">
+    <div class="card"><h2>Profit &amp; loss</h2><div id="pnl"></div><div id="pnlHold"></div></div>
+    <div class="acct2">
+    <div class="card"><h2>Deposit <span class="tag">practice</span></h2>
+      <p class="muted tiny">Top up with free practice credits. No bank, no card, no real money, ever.</p>
+      <div class="presets"><button class="btn ghost" data-dep="50000">+₦50k practice</button><button class="btn ghost" data-dep="100000">+₦100k practice</button><button class="btn ghost" data-dep="250000">+₦250k practice</button><button class="btn ghost" data-dep="500000">+₦500k practice</button></div>
+      <p class="tiny muted">Practice deposits are capped at ₦5,000,000 and don't count toward your P&amp;L or Board score.</p></div>
+    <div class="card"><h2>Withdraw <span class="tag">practice</span></h2>
+      <p class="muted tiny">Move practice credits out to your <b>simulated wallet</b>. Nothing leaves this app; it can't be cashed out.</p>
+      <div class="presets"><button class="btn ghost" data-wd="25000">₦25k</button><button class="btn ghost" data-wd="100000">₦100k</button><button class="btn ghost" data-wd="all">All credits</button></div>
+      <form id="wdForm" class="row"><input id="wdAmt" type="number" min="1" step="1" inputmode="numeric" placeholder="Amount (₦ practice)"><button class="btn">Withdraw</button></form></div>
+    </div>
+    <div class="card"><div class="row" style="justify-content:space-between"><h2>Transactions</h2><select id="hFilter" style="width:auto;margin:0"><option value="">All</option><option value="dep">Deposits</option><option value="wd">Withdrawals</option><option value="buy">Buys</option><option value="sell">Sells</option><option value="pay">Payouts</option></select></div><div id="hist"></div></div>
+  </section>
   <section id="board" class="tab"><div id="lb"></div></section>
   <section id="list" class="tab">
     <div class="card">
@@ -64,8 +79,8 @@
       <p class="muted">Got a shop wey dey move? Tell us. This form only saves <b>on this device (localStorage)</b>. Nothing is sent anywhere yet.</p>
       <form id="bizForm">
         <label>Business name<input name="name" required maxlength="60"></label>
-        <label>Type<input name="type" required placeholder="e.g. Pepper soup joint" maxlength="60"></label>
-        <label>City<select name="city"><option>Lagos</option><option>Kano</option><option>Abuja</option><option>Port Harcourt</option><option>Other</option></select></label>
+        <label>Type<input name="type" required placeholder="e.g. Poultry farm, phone shop" maxlength="60"></label>
+        <label>State<select name="state" id="bizState" required></select></label>
         <label>About the business<textarea name="about" rows="3" maxlength="400"></textarea></label>
         <button class="btn">Submit for review</button>
       </form>
@@ -87,6 +102,7 @@
       <li>Buy slots in any business. Each slot is a small piece of its daily earnings.</li>
       <li>Come back every real day to <b>collect</b>. Some days good, some days na loss, like real life.</li>
       <li>Sell slots back anytime at the current valuation. It moves up and down.</li>
+      <li>Track your P&amp;L, top up or withdraw practice credits in Account. None of it is real money.</li>
       <li>Grow your net worth and climb the board.</li>
     </ol>
     <button id="reset" class="btn ghost tiny">Reset my practice account</button>
