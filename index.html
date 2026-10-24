@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Kobo Share — Own am small small (practice app)</title>
+<meta name="description" content="Practice owning fractional slots of everyday Nigerian businesses with ₦500,000 free practice credits. No real money.">
+<meta property="og:title" content="Kobo Share — Own am small small">
+<meta property="og:description" content="Practice owning slots of Lagos, Kano, Abuja & PH businesses with free practice credits. No real money, just learn the game.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://0xzahra.github.io/kobo-share/">
+<meta name="theme-color" content="#0b3d2e">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪙</text></svg>">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="banner">⚠️ <b>Practice mode</b> · Capital at risk in real life · Credits here are <b>not real money</b></div>
+<header class="top">
+  <div class="brand">🪙 <span>Kobo<b>Share</b></span></div>
+  <div class="wallet"><small>Practice credits</small><strong id="cash">—</strong></div>
+</header>
+<main>
+  <section class="hero card">
+    <div>
+      <h1>Own am small small 🇳🇬</h1>
+      <p>Buy slots in everyday Naija businesses, collect daily payouts, learn how small business money dey move. All with <b>free practice credits</b>.</p>
+    </div>
+    <div class="stats">
+      <div><small>Net worth</small><strong id="nw">—</strong></div>
+      <div><small>Profit / loss</small><strong id="pl">—</strong></div>
+      <div><small>Rank</small><strong id="rank">—</strong></div>
+    </div>
+    <button id="collect" class="btn gold">Collect today's payout</button>
+    <p id="collectNote" class="muted tiny"></p>
+  </section>
+
+  <nav class="tabs">
+    <button data-tab="market" class="on">🏪 Market</button>
+    <button data-tab="portfolio">💼 My slots</button>
+    <button data-tab="history">📜 Payouts</button>
+    <button data-tab="board">🏆 Board</button>
+    <button data-tab="list">➕ List biz</button>
+  </nav>
+
+  <section id="market" class="tab on">
+    <p class="muted tiny">Listings are <b>illustrative examples</b>, not real businesses. Earnings are ranges and <b>not guaranteed</b>.</p>
+    <div id="listings" class="grid"></div>
+  </section>
+  <section id="portfolio" class="tab"><div id="port"></div></section>
+  <section id="history" class="tab"><div id="hist"></div></section>
+  <section id="board" class="tab"><div id="lb"></div></section>
+  <section id="list" class="tab">
+    <div class="card">
+      <h2>List your business</h2>
+      <p class="muted">Got a shop wey dey move? Tell us. This form only saves <b>on your phone (localStorage)</b> — nothing is sent anywhere yet.</p>
+      <form id="bizForm">
+        <label>Business name<input name="name" required maxlength="60"></label>
+        <label>Type<input name="type" required placeholder="e.g. Pepper soup joint" maxlength="60"></label>
+        <label>City<select name="city"><option>Lagos</option><option>Kano</option><option>Abuja</option><option>Port Harcourt</option><option>Other</option></select></label>
+        <label>Tell us small about am<textarea name="about" rows="3" maxlength="400"></textarea></label>
+        <button class="btn">Submit for review</button>
+      </form>
+      <p id="bizMsg" class="ok"></p>
+    </div>
+    <div class="card">
+      <h2>Join the waitlist</h2>
+      <p class="muted">Your email is <b>stored locally on this device only</b>. We no dey send am anywhere.</p>
+      <form id="wlForm" class="row"><input type="email" name="email" required placeholder="you@email.com"><button class="btn">Join</button></form>
+      <p id="wlMsg" class="ok"></p>
+    </div>
+  </section>
+
+  <section class="card how">
+    <h2>How it works</h2>
+    <ol>
+      <li>🎁 You get <b>₦500,000 practice credits</b> — free, not real money.</li>
+      <li>🛒 Buy slots for any business. Each slot = small piece of the daily earnings.</li>
+      <li>📅 Every real day, come <b>collect</b> your payout. Some days good, some days na loss — like real life.</li>
+      <li>💱 Sell slots back anytime at the current valuation (e dey go up and down).</li>
+      <li>🏆 Grow your net worth and climb the board.</li>
+    </ol>
+    <button id="reset" class="btn ghost tiny">Reset my practice account</button>
+  </section>
+</main>
+<footer>Kobo Share is a practice app. No real money. Real-money investing will only launch with a licensed partner.</footer>
+<div id="modal" class="modal" hidden></div>
+<div id="toast" class="toast" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>
