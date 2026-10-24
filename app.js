@@ -400,17 +400,44 @@ $('#gStart').onclick=closeIntro;
 function openApp(){render()}
 render();
 
-let syncT=null;
-function pushState(){if(!USER||!sbc())return;clearTimeout(syncT);syncT=setTimeout(()=>sbc().from('profiles').update({practice_state:S,updated_at:new Date().toISOString()}).eq('id',USER.id).then(()=>{}),1500)}
-const _save=save; save=function(){S.updatedAt=Date.now();_save();pushState()};
+// ---- Cloud practice state (Supabase): practice_state + practice_holdings + practice_activity.
+// Row-level security: each signed-in user reads/writes only their own rows. localStorage stays as the offline cache.
+const CORE=['cash','start','wallet','dep','wd','lots','hist','updatedAt','uid','dirty'];
+let syncT=null,CLOUD=false;
+function toCloud(s){const extra={};for(const k in s)if(!CORE.includes(k))extra[k]=s[k];
+  return [{cash:s.cash,start:s.start||START,wallet:s.wallet||0,dep:s.dep||0,wd:s.wd||0,updatedAt:s.updatedAt||Date.now(),extra},s.lots||[],s.hist||[]]}
+function fromCloud(st,h,a){return {...(st.extra||{}),cash:Number(st.cash),start:Number(st.start),wallet:Number(st.wallet),dep:Number(st.dep),wd:Number(st.wd),
+  updatedAt:Number(st.client_updated_at)||0,lots:h.map(r=>({id:r.biz_id,q:r.qty,p:Number(r.price),d:r.day})),hist:a.map(r=>({d:r.day,t:r.text,a:Number(r.amount),k:r.kind}))}}
+async function cloudSave(){if(!USER||!CLOUD||!sbc())return false;const [st,h,a]=toCloud(S);
+  try{const {error}=await sbc().rpc('practice_save',{p_state:st,p_holdings:h,p_activity:a});if(error)return false}catch(e){return false}
+  S.dirty=false;_save();return true}
+function pushState(){if(!USER||!CLOUD)return;clearTimeout(syncT);syncT=setTimeout(cloudSave,800)}
+const _save=save; save=function(){S.updatedAt=Date.now();if(USER)S.uid=USER.id;S.dirty=true;_save();pushState()};
+addEventListener('online',()=>{if(S.dirty)pushState()});
+async function allRows(q){const out=[];for(let i=0;;i+=1000){const {data,error}=await q().range(i,i+999);if(error)throw error;out.push(...data);if(data.length<1000)return out}}
+async function cloudLoad(user,legacy){const sb=sbc(),uid=user.id;
+  const st=await sb.from('practice_state').select('*').eq('user_id',uid).maybeSingle();if(st.error)throw st.error;
+  if(st.data){
+    // This device has unsynced practice changes for this same account that are newer: keep them and upload.
+    if(S.uid===uid&&S.dirty&&(S.updatedAt||0)>Number(st.data.client_updated_at||0)){CLOUD=true;await cloudSave();return}
+    const h=await allRows(()=>sb.from('practice_holdings').select('biz_id,qty,price,day').eq('user_id',uid).order('pos'));
+    const a=await allRows(()=>sb.from('practice_activity').select('day,text,amount,kind').eq('user_id',uid).order('pos'));
+    const r=fromCloud(st.data,h,a);if(!Number.isInteger(r.cash))return;
+    S=migrate(r);S.uid=uid;S.dirty=false;CLOUD=true;_save();render();
+    if(r.v<5||S.cash!==r.cash)save(); // practice top-up applied: write it back
+    return}
+  // First load for this account: move this device's practice data (or the older account copy) into Supabase.
+  let src=(!S.uid||S.uid===uid)?S:fresh();
+  if(legacy&&Number.isInteger(legacy.cash)&&(legacy.updatedAt||0)>(src.updatedAt||0))src=migrate(legacy);
+  S=migrate(src);S.uid=uid;CLOUD=true;save();
+  const ok=await cloudSave();clearTimeout(syncT);render();if(ok)toast('Practice progress saved to your account')}
 async function onLogin(user){
   USER=user;authUI();closeSheet();if(!$('#gate').hidden)closeIntro();openApp();const sb=sbc();
   let pend=null;try{pend=localStorage.getItem('koboShare.pendingSrc')}catch(e){}const srcTag=pend||SRC;
   const m=user.user_metadata||{},prov=(user.app_metadata&&user.app_metadata.provider)||'email';
-  try{const {data}=await sb.from('profiles').select('practice_state,src,name,provider').eq('id',user.id).maybeSingle();
-    const remote=data&&data.practice_state;
-    if(remote&&Number.isInteger(remote.cash)&&(remote.updatedAt||0)>(S.updatedAt||0)){S=migrate(remote);_save();render();toast('Practice progress loaded from your account')}
-    else pushState();
+  let data=null;try{data=(await sb.from('profiles').select('practice_state,src,name,provider').eq('id',user.id).maybeSingle()).data}catch(e){}
+  try{await cloudLoad(user,data&&data.practice_state)}catch(e){addEventListener('online',()=>cloudLoad(user,data&&data.practice_state).catch(()=>{}),{once:true})} // offline: keep the local cache, retry when back online
+  try{
     const upd={email:user.email,provider:prov,last_sign_in_at:new Date().toISOString()};
     const nm=m.full_name||m.name; if(nm&&!(data&&data.name)) upd.name=String(nm).slice(0,100);
     if(!(data&&data.src)) upd.src=srcTag;
