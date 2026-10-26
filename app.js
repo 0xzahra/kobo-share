@@ -106,7 +106,11 @@ function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&Number.i
 function save(){localStorage.setItem(KEY,JSON.stringify(S))}
 
 const PT='<span class="ptag">Practice</span>';
-const fmt = k => (k<0?'-':'')+'₦'+(Math.abs(k)/100).toLocaleString('en-NG',{minimumFractionDigits:0,maximumFractionDigits:2});
+const RATE=1500; // fixed practice rate: 1 USD = ₦1,500 (display only)
+let CUR=localStorage.getItem('kobo_cur')==='USD'?'USD':'NGN';
+const fmt = k => {const a=Math.abs(k)/100;return (k<0?'-':'')+(CUR==='USD'?'$'+(a/RATE).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'₦'+a.toLocaleString('en-NG',{minimumFractionDigits:0,maximumFractionDigits:2}))};
+function setCur(c){CUR=c;localStorage.setItem('kobo_cur',c);const b=document.getElementById('curBtn');if(b)b.textContent=c==='USD'?'$ USD':'₦ NGN';document.querySelectorAll('#cash,#nw,#hv').forEach(e=>{e._v=undefined});if(typeof render==='function')render()}
+document.addEventListener('DOMContentLoaded',()=>{const b=document.getElementById('curBtn');if(b){b.textContent=CUR==='USD'?'$ USD':'₦ NGN';b.onclick=()=>setCur(CUR==='USD'?'NGN':'USD')}});
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ini = n => n.replace(/[^A-Za-z ]/g,'').split(' ').filter(w=>w.length>2).slice(0,2).map(w=>w[0]).join('').toUpperCase();
