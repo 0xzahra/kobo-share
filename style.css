@@ -135,3 +135,24 @@ b,td,.nm,.pr{overflow-wrap:anywhere}
  table{font-size:12px}
 }
 @media (max-width:360px){.pchip{display:none}}
+
+/* Theme switch (sun/moon) */
+.thsw{flex:none;width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--s2);color:var(--t);display:grid;place-items:center;cursor:pointer;padding:0}
+.thsw svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.thsw .i-moon{display:none}[data-theme=light] .thsw .i-sun{display:none}[data-theme=light] .thsw .i-moon{display:block}
+.gate .thsw{position:absolute;top:calc(14px + env(safe-area-inset-top));right:16px;border-color:rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:#ffb547}
+.madeby{display:inline-block;font-size:12px;padding:6px 12px;border:1px solid rgba(127,127,127,.3);border-radius:99px;text-decoration:none!important;opacity:1}
+/* Light theme for the intro */
+[data-theme=light] .gate{background:#f5f7f6;color:#0a1210}
+[data-theme=light] .gate .thsw{background:#fff;border-color:rgba(10,20,15,.12);color:#3b4a45}
+[data-theme=light] .gname b{color:#0db35a}
+[data-theme=light] .glede{color:#3b4a45}
+[data-theme=light] .pnote,[data-theme=light] .linkbtn{color:#55635e}[data-theme=light] .pnote a{color:#0a1210}
+[data-theme=light] .gpriv,[data-theme=light] .glegal{color:#55635e}[data-theme=light] .gpriv a{color:#3b4a45}
+[data-theme=light] .gframe{border-color:#d9dfdc;box-shadow:0 18px 40px rgba(10,20,15,.15)}
+[data-theme=light] .gmsg{color:#0a8a45}
+[data-theme=light] .gemail input{background:#fff;color:#0a1210;border-color:rgba(10,20,15,.15)}
+[data-theme=light] .sso{border-color:rgba(10,20,15,.15)}
+.btn.depbtn{display:block;width:100%;margin:4px 0 10px;height:46px;border:1px solid var(--a);background:transparent;color:var(--a)}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border:1px solid var(--line);border-radius:12px;background:var(--s);margin:4px 0 12px}.seg button{border:0;border-radius:9px;padding:9px;background:transparent;color:var(--m);font:600 14px Inter,sans-serif;cursor:pointer}.seg button.on{background:var(--a);color:var(--onA)}
+.faq{margin-top:22px}.faq h2.sub{font-size:18px;margin:0 0 8px}

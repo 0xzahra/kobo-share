@@ -270,9 +270,10 @@ $('#wlForm').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(ne
   $('#wlMsg').textContent=ok?"You're on the early list. Interest only, nothing is sold.":"Saved on this device for now (couldn't reach the server)."};
 // Theme: follows system by default, remembers explicit choice
 const TKEY='koboShare.theme', root=document.documentElement;
-function setTheme(t){root.dataset.theme=t;document.querySelector('meta[name=theme-color]').content=t==='light'?'#f4f6f5':'#05070a'}
+function setTheme(t){root.dataset.theme=t;document.querySelectorAll('[data-theme-toggle]').forEach(b=>b.setAttribute('aria-pressed',t==='dark'));document.querySelector('meta[name=theme-color]').content=t==='light'?'#f4f6f5':'#05070a'}
 setTheme(root.dataset.theme||'dark');
 function toggleTheme(){const t=root.dataset.theme==='light'?'dark':'light';setTheme(t);try{localStorage.setItem(TKEY,t)}catch(e){}}
+document.querySelectorAll('[data-theme-toggle]').forEach(b=>b.onclick=toggleTheme);
 matchMedia('(prefers-color-scheme: light)').addEventListener('change',e=>{if(!localStorage.getItem(TKEY))setTheme(e.matches?'light':'dark')});
 save();
 
@@ -474,3 +475,15 @@ async function renderAdmin(){
 // ---- Privacy sheet (intro link) ----
 const PRIV_HTML='Kobo Share records your email and in-app activity to run and improve Kobo Share. Never sold. Handled in line with the NDPA 2023. To delete your data or get support, message <a href="https://x.com/0xarewah" target="_blank" rel="noopener">X @0xarewah</a> or <a href="https://t.me/Oxarewah" target="_blank" rel="noopener">Telegram @Oxarewah</a>.';
 document.getElementById('gPriv').onclick=e=>{e.preventDefault();sheet(`<h2>Privacy</h2><p class="tiny muted">${PRIV_HTML}</p><p class="tiny muted">Practice game only. No real money is used, collected or paid. All businesses are fictional examples. Not an investment, not an offer or solicitation, and not registered with any securities regulator.</p><p class="tiny"><a href="privacy.html" target="_blank">Privacy Policy</a> · <a href="terms.html" target="_blank">Terms of Use</a></p><div class="row"><button class="btn" style="flex:1" data-close>Close</button></div>`);$('#modal').onclick=ev=>{if(ev.target===$('#modal')||ev.target.dataset.close!==undefined)closeSheet()}};
+
+// ---- Visit log: one row per page load (page, time, random anonymous id; no personal data) ----
+(function(){let n=0;const go=()=>{const sb=sbc();if(!sb){if(++n<20)setTimeout(go,500);return}
+  let id;try{id=localStorage.getItem('koboShare.anon');if(!id){id=(crypto.randomUUID?crypto.randomUUID():String(Math.random()).slice(2));localStorage.setItem('koboShare.anon',id)}}catch(e){}
+  sb.from('visits').insert({page:(location.pathname.split('/').pop()||'home').slice(0,60),anon_id:id?String(id).slice(0,40):null,signed_in:!!USER}).then(()=>{},()=>{})};
+  setTimeout(go,1500)})();
+
+// Home "Add practice credits" button: opens the credits panel in My shares
+$('#homeDep').onclick=()=>{const t=document.querySelector('[data-tab=portfolio]');t&&t.click();const f=$('#depFold');if(f){f.open=true;setTimeout(()=>f.scrollIntoView({behavior:'smooth',block:'center'}),120)}};
+
+// Early list: Individual / Business tabs
+document.querySelectorAll('[data-seg]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-seg]').forEach(x=>{const on=x===b;x.classList.toggle('on',on);x.setAttribute('aria-selected',on);document.getElementById(x.dataset.seg).hidden=!on})});

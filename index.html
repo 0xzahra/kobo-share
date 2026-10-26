@@ -11,12 +11,14 @@
 <link rel="canonical" href="https://0xzahra.github.io/kobo-share/">
 <meta property="og:url" content="https://0xzahra.github.io/kobo-share/">
 <meta property="og:site_name" content="Kobo Share">
-<meta property="og:image" content="https://0xzahra.github.io/kobo-share/intro-poster.jpg">
+<meta property="og:image" content="https://0xzahra.github.io/kobo-share/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Kobo Share practice app: simulation, not an investment; no real money">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Kobo Share: practice owning slices of small businesses">
 <meta name="twitter:description" content="Free practice-only simulation with fictional example businesses. Simulation, not an investment; no real money.">
-<meta name="twitter:image" content="https://0xzahra.github.io/kobo-share/intro-poster.jpg">
+<meta name="twitter:image" content="https://0xzahra.github.io/kobo-share/og.png">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Kobo Share","url":"https://0xzahra.github.io/kobo-share/","applicationCategory":"EducationalApplication","applicationSubCategory":"Investing practice simulation","operatingSystem":"Web browser","description":"Kobo Share is a free, practice-only simulation for learning how owning slices of small businesses works, using free practice credits on fictional example businesses. Simulation, not an investment; no real money is used, collected or paid, and no returns are real or guaranteed.","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"NGN"},"author":{"@type":"Person","name":"Zahra Usman"}}</script>
 <meta name="theme-color" content="#05070a">
 <script>(function(){try{var t=localStorage.getItem('koboShare.theme')}catch(e){}if(t!=='light'&&t!=='dark')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';document.documentElement.dataset.theme=t})()</script>
@@ -30,11 +32,13 @@
 <!-- ===== First-visit intro (dismissible) ===== -->
 <section id="gate" class="gate" aria-label="Welcome to Kobo Share" hidden>
   <div class="gbody">
+    <button class="thsw" type="button" data-theme-toggle aria-label="Switch light or dark theme" title="Light / dark"><svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg><svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></button>
     <div class="gframe"><video class="gvid" muted loop playsinline preload="metadata" poster="intro-poster.jpg" aria-hidden="true"><source src="intro.mp4" type="video/mp4"></video></div>
     <h1 class="gname">kobo<b>share</b></h1>
     <p class="glede">Practice owning slices of small businesses.</p>
     <button class="btn wide" id="gStart">Start exploring</button>
     <p class="pnote mono">Practice mode, no real money · <a href="#" id="gPriv">Privacy</a> · <a href="terms.html">Terms</a></p>
+    <p class="pnote"><a class="credit madeby" href="https://0xzahra.github.io/" target="_blank" rel="noopener">Made by Zahra ↗</a></p>
   </div>
 </section>
 
@@ -43,6 +47,7 @@
 <header class="top">
   <div class="brand"><span class="logo" aria-hidden="true"></span><span>kobo<b>share</b></span></div>
   <span class="pchip mono" title="Practice mode · No real money"><i class="dot"></i>Practice mode · No real money</span>
+  <button class="thsw" type="button" data-theme-toggle aria-label="Switch light or dark theme" title="Light / dark"><svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg><svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></button>
   <button id="authBtn" class="avatar" aria-label="Account and settings">K</button>
 </header>
 <main>
@@ -50,9 +55,9 @@
     <div class="hero">
       <p class="k mono">practice balance</p>
       <div class="big"><span id="nw">-</span></div><p class="usd bigusd" id="nwU"></p>
-      <p class="usd bigusd" id="nwU"></p>
       <div class="chips"><span class="chip" id="pl">-</span><span class="chip streak" id="streak"><i class="flame"></i><b id="streakN">0</b>&nbsp;<span class="mono">day streak</span></span></div>
     </div>
+    <button id="homeDep" class="btn ghost depbtn" type="button">＋ Add practice credits</button>
     <button id="collect" class="btn collect"><span class="lbl">Collect</span></button>
     <p id="collectNote" class="muted tiny center"></p>
     <div class="week" id="week" aria-label="Last 7 days collected"></div>
@@ -66,6 +71,11 @@
       <p class="tiny muted">Kobo Share is a practice app for owning slices of small businesses. You get free practice credits to try it with fictional example businesses. No real money is used and nothing here is an investment.</p>
     </div>
     <button id="share" class="btn ghost tiny wide" hidden>Share my practice card</button>
+    <div class="faq" id="faq"><h2 class="sub">How it works &amp; FAQ</h2>
+    <details class="fold"><summary>What is Kobo Share?</summary><p class="muted">Kobo Share is a practice app. You use free practice credits to buy small shares of example businesses, like shops, farms and restaurants, and watch how they do. It helps you learn before you ever risk real money. It is a simulation, not an investment. No real money is involved.</p></details>
+    <details class="fold"><summary>How does it work?</summary><ol class="how"><li>You get <b>₦5,000,000 practice credits</b>. Free, not real money.</li><li>Own practice shares in fictional example businesses.</li><li>Come back daily to <b>Collect</b> today's practice score. Some days good, some days a loss.</li><li>Sell shares anytime at the current practice value.</li><li>Track your practice score and credits in My shares. None of it is real money.</li></ol></details>
+    <details class="fold"><summary>Is any of this real money?</summary><p class="muted">No. Credits, shares and scores are all practice. Nothing is collected or paid out, and the businesses are fictional examples.</p></details>
+    </div>
   </section>
 
   <section id="market" class="tab">
@@ -81,7 +91,7 @@
     <div class="th"><h2>My shares</h2></div>
     <div id="port"></div>
     <details class="fold"><summary>Practice score</summary><div id="pnl"></div><div id="pnlHold"></div></details>
-    <details class="fold"><summary>Add practice credits</summary>
+    <details class="fold" id="depFold"><summary>Add practice credits</summary>
       <p class="muted tiny">Free practice credits. No bank, no card, no real money, ever. Capped at ₦5,000,000.</p>
       <div class="presets"><button class="btn ghost" data-dep="50000">+₦50k</button><button class="btn ghost" data-dep="100000">+₦100k</button><button class="btn ghost" data-dep="250000">+₦250k</button><button class="btn ghost" data-dep="500000">+₦500k</button></div>
       <p class="muted tiny">Collect practice credits into your Practice wallet. Nothing leaves this app.</p>
@@ -100,17 +110,17 @@
       <div id="chPicks"></div></details>
     <details class="fold" id="stFold"><summary>Stats</summary><div id="statsBox"><p class="muted tiny">Loading stats…</p></div></details>
     <details class="fold" id="wlFold"><summary>Join the early list</summary>
-      <p class="muted tiny">Interest only for a possible future licensed version. Nothing is being sold and no money is collected.</p>
+      <div class="seg" role="tablist"><button type="button" role="tab" class="on" data-seg="wlPane" aria-selected="true">Individual</button><button type="button" role="tab" data-seg="bizPane" aria-selected="false">Business</button></div>
+      <div id="wlPane"><p class="muted tiny">Interest only for a possible future licensed version. Nothing is being sold and no money is collected.</p>
       <form id="wlForm">
         <input name="name" required maxlength="100" autocomplete="name" placeholder="Name" aria-label="Name">
         <input type="email" name="email" required maxlength="200" placeholder="you@email.com" autocomplete="email" aria-label="Email">
         <select name="state" id="wlState" aria-label="State"></select>
-        <fieldset class="kind"><label class="radio"><input type="radio" name="kind" value="owner" required> Business owner</label><label class="radio"><input type="radio" name="kind" value="curious" required> Just curious</label></fieldset>
+        <fieldset class="kind" hidden><label class="radio"><input type="radio" name="kind" value="owner" required> Business owner</label><label class="radio"><input type="radio" name="kind" value="curious" required checked> Just curious</label></fieldset>
         <input id="wlType" name="business_type" maxlength="80" placeholder="Business type, e.g. salon" hidden aria-label="Business type">
         <button class="btn">Join early list</button>
-      </form><p id="wlMsg" class="ok"></p></details>
-    <details class="fold"><summary>Own a business? Register interest</summary>
-      <p class="muted tiny"><b>Nothing is being raised or sold, no money is collected</b>, and no business is listed. Never send revenue or bank details.</p>
+      </form><p id="wlMsg" class="ok"></p></div>
+      <div id="bizPane" hidden><p class="muted tiny"><b>Nothing is being raised or sold, no money is collected</b>, and no business is listed. Never send revenue or bank details.</p>
       <form id="bizForm">
         <input name="owner_name" required maxlength="100" autocomplete="name" placeholder="Your name" aria-label="Your name">
         <input name="business_name" required maxlength="100" placeholder="Business name" aria-label="Business name">
@@ -119,9 +129,7 @@
         <input name="contact" required maxlength="200" autocomplete="email" placeholder="Contact email or phone" aria-label="Contact">
         <textarea name="about" rows="2" maxlength="400" placeholder="About the business (optional)" aria-label="About"></textarea>
         <button class="btn">Register interest</button>
-      </form><p id="bizMsg" class="ok"></p></details>
-    <details class="fold"><summary>How it works</summary>
-      <ol class="how"><li>You get <b>₦5,000,000 practice credits</b>. Free, not real money.</li><li>Own practice shares in fictional example businesses.</li><li>Come back daily to <b>Collect</b> today's practice score. Some days good, some days a loss.</li><li>Sell shares anytime at the current practice value.</li><li>Track your practice score and credits in My shares. None of it is real money.</li></ol></details>
+      </form><p id="bizMsg" class="ok"></p></div></details>
     <p class="tiny muted priv">Kobo Share records your email and in-app activity after you sign in to run and improve Kobo Share. Never sold. Handled in line with the NDPA 2023. To delete your data or get support, message <a href="https://x.com/0xarewah" target="_blank" rel="noopener">X @0xarewah</a> or <a href="https://t.me/Oxarewah" target="_blank" rel="noopener">Telegram @Oxarewah</a>.</p>
   </section>
 </main>
@@ -130,7 +138,7 @@
   <p>Kobo Share is a free, practice-only simulator that shows how owning small slices (fractions) of small businesses works. You get practice credits, buy practice shares in fictional example businesses, and watch simulated daily practice scores go up and down. You can explore it without signing in.</p>
   <p><b>This is a simulation, not an investment offer.</b> No real money is used, collected or paid. Every business is fictional, practice scores are simulated, and nothing is guaranteed. Kobo Share is not a crowdfunding platform, does not give financial advice, and is not registered with any securities regulator.</p>
 </section>
-<footer><b>Practice game only.</b> No real money is used, collected or paid. All businesses are fictional examples. Kobo Share is not an investment, not an offer or solicitation, and is not registered with any securities regulator. Early-list sign-ups are interest only. <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></footer>
+<footer><b>Practice game only.</b> No real money is used, collected or paid. All businesses are fictional examples. Kobo Share is not an investment, not an offer or solicitation, and is not registered with any securities regulator. Early-list sign-ups are interest only. <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a><br><a class="credit" href="https://0xzahra.github.io/" target="_blank" rel="noopener">Made by Zahra ↗</a></footer>
 <nav class="tabs" role="tablist">
   <button data-tab="home" class="on"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9H4z"/></svg><span>Home</span></button>
   <button data-tab="market"><svg viewBox="0 0 24 24"><path d="M4 10h16v10H4zM3 10l2-6h14l2 6"/></svg><span>Market</span></button>
