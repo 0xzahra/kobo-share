@@ -107,10 +107,9 @@ function save(){localStorage.setItem(KEY,JSON.stringify(S))}
 
 const PT='<span class="ptag">Practice</span>';
 const RATE=1500; // fixed practice rate: 1 USD = ₦1,500 (display only)
-let CUR=localStorage.getItem('kobo_cur')==='USD'?'USD':'NGN';
-const fmt = k => {const a=Math.abs(k)/100;return (k<0?'-':'')+(CUR==='USD'?'$'+(a/RATE).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'₦'+a.toLocaleString('en-NG',{minimumFractionDigits:0,maximumFractionDigits:2}))};
-function setCur(c){CUR=c;localStorage.setItem('kobo_cur',c);const b=document.getElementById('curBtn');if(b)b.textContent=c==='USD'?'$ USD':'₦ NGN';document.querySelectorAll('#cash,#nw,#hv').forEach(e=>{e._v=undefined});if(typeof render==='function')render()}
-document.addEventListener('DOMContentLoaded',()=>{const b=document.getElementById('curBtn');if(b){b.textContent=CUR==='USD'?'$ USD':'₦ NGN';b.onclick=()=>setCur(CUR==='USD'?'NGN':'USD')}});
+const fmt = k => {const a=Math.abs(k)/100;return (k<0?'-':'')+'₦'+a.toLocaleString('en-NG',{minimumFractionDigits:0,maximumFractionDigits:2})};
+const usd = k => {const a=Math.abs(k)/100/RATE;return '≈'+(k<0?'-':'')+'$'+a.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+' USD'};
+const U = k => `<small class="usd">${usd(k)}</small>`; // small grey USD line under a naira amount
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ini = n => n.replace(/[^A-Za-z ]/g,'').split(' ').filter(w=>w.length>2).slice(0,2).map(w=>w[0]).join('').toUpperCase();
@@ -143,12 +142,13 @@ function streak(){const c=S.cd||[],t=today();let d=c.includes(t)?t:t-1,n=0;while
 function render(){
   const nw=netWorth(), pl=pnl().total;
   countTo($('#cash'),S.cash); countTo($('#nw'),nw); countTo($('#hv'),holdingsValue());
+  $('#nwU').textContent=usd(nw); $('#cashU').textContent=usd(S.cash); $('#hvU').textContent=usd(holdingsValue());
   $('#pl').innerHTML=`<span class="${pl>=0?'up':'down'}">${pl>=0?'▲ +':'▼ '}${fmt(pl)}</span>${PT} <span class="mono">all time</span>`;
   const st=streak(), c=S.cd||[], t=today();
   $('#streakN').textContent=st; $('#streak').classList.toggle('on',st>0);
   $('#week').innerHTML=[6,5,4,3,2,1,0].map(i=>`<i class="${c.includes(t-i)?'y':''} ${i===0?'t':''}"></i>`).join('');
   const p=pending(), btn=$('#collect'), lbl=btn.querySelector('.lbl');
-  if(p.n<=0){btn.disabled=true;lbl.textContent='Collected for today';$('#collectNote').textContent='Next Collect unlocks tomorrow (Lagos time). Patience na virtue.';}
+  if(p.n<=0){btn.disabled=true;lbl.textContent='Collected for today';$('#collectNote').textContent='Next Collect unlocks tomorrow (Lagos time). Please check back tomorrow.';}
   else if(!S.lots.length){btn.disabled=true;lbl.textContent='Own shares to start playing';$('#collectNote').textContent='Shares you own today start scoring from tomorrow.';}
   else{btn.disabled=false;lbl.textContent=p.n>1?`Collect ${p.n} days`:'Collect';$('#collectNote').textContent='Simulated for learning. Results vary, nothing is guaranteed.';}
   renderMarket(); renderPort(); renderAcct(); renderHist(); renderChallenge();
@@ -160,12 +160,12 @@ function renderMarket(){
   if(!list.length){$('#listings').innerHTML=empty(`No example listings in ${esc(st||'this filter')} yet.`);return}
   $('#listings').innerHTML=list.map(b=>{const v=value(b,t), ch=Math.round((v-value(b,t-1))*10000/value(b,t-1))/100, h=held(b.id);
     return `<button class="li" data-detail="${b.id}"><div class="av">${ini(b.name)}</div><div class="nm"><b>${esc(b.name)}</b><small>${esc(b.state)} · ${esc(b.cat)}${h?` · <span class="up">you own ${h}</span>`:''}</small></div>
-    <div class="pr"><b>${fmt(v)}</b><small class="${ch>=0?'up':'down'} mono">${ch>=0?'▲':'▼'} ${Math.abs(ch)}%</small></div></button>`}).join('');
+    <div class="pr"><b>${fmt(v)}</b>${U(v)}<small class="${ch>=0?'up':'down'} mono">${ch>=0?'▲':'▼'} ${Math.abs(ch)}%</small></div></button>`}).join('');
 }
 function detailSheet(b){
   const t=today(), v=value(b,t), taken=soldOut(b)+held(b.id), pct=Math.min(100,Math.round(taken*100/b.slots)), h=held(b.id), c=chState(), picked=!!c.picks.find(p=>p.id===b.id);
   sheet(`<div class="row"><div class="av">${ini(b.name)}</div><div><h2>${esc(b.name)}<span class="tag">example</span></h2><p class="tiny muted" style="margin:0">${esc(b.area)}, ${esc(b.state)} · ${esc(b.cat)}</p></div></div>
-  <p class="pbig">${fmt(v)}${PT} <span class="muted">per share today</span></p>
+  <p class="pbig">${fmt(v)}${PT} <span class="muted">per share today</span></p><p class="usd">${usd(v)} per share</p>
   <div class="kv"><div><small>daily/share*</small><b>${fmt(b.min)}–${fmt(b.max).slice(1)}</b></div><div><small>bad-day</small><b>~${Math.round(b.bad*100)}%</b></div><div><small>you own</small><b>${h}</b></div></div>
   <p class="tiny muted mono">${taken}/${b.slots} shares taken (${pct}%) · *simulated, not guaranteed</p>
   <div class="row" style="margin-top:14px">${h?`<button class="btn ghost" data-sell="${b.id}">Sell</button>`:''}<button class="btn ghost" data-pick="${b.id}" ${picked||c.picks.length>=3?'disabled':''}>${picked?'Picked':'Pick for challenge'}</button><button class="btn" style="flex:1" data-buy="${b.id}" ${taken>=b.slots?'disabled':''}>${taken>=b.slots?'Sold out':'Own shares'}</button></div>`);
@@ -174,29 +174,29 @@ function detailSheet(b){
 const empty = (m) => `<div class="card empty"><div class="ring"></div>${m}</div>`;
 function renderPort(){
   const ids=[...new Set(S.lots.map(l=>l.id))];
-  if(!ids.length){$('#port').innerHTML=empty('No shares yet.<br>Pick one from the Market wey sweet you.');return}
+  if(!ids.length){$('#port').innerHTML=empty('No shares yet.<br>Pick one you like from the Market.');return}
   const t=today();
   $('#port').innerHTML='<div class="list">'+ids.map(id=>{const b=BYID[id], q=held(id), cost=costBasis(id), v=q*value(b,t);
-    return `<button class="li" data-detail="${id}"><div class="av">${ini(b.name)}</div><div class="nm"><b>${esc(b.name)}</b><small>${q} share${q>1?'s':''} · cost ${fmt(cost)}</small></div><div class="pr"><b>${fmt(v)}</b><small class="${v>=cost?'up':'down'} mono">${pc(v-cost,cost)}</small></div></button>`}).join('')+
-    `</div><p class="tiny muted">Total holdings: <b>${fmt(holdingsValue())}${PT}</b> · valuations move daily.</p>`;
+    return `<button class="li" data-detail="${id}"><div class="av">${ini(b.name)}</div><div class="nm"><b>${esc(b.name)}</b><small>${q} share${q>1?'s':''} · cost ${fmt(cost)}</small></div><div class="pr"><b>${fmt(v)}</b>${U(v)}<small class="${v>=cost?'up':'down'} mono">${pc(v-cost,cost)}</small></div></button>`}).join('')+
+    `</div><p class="tiny muted">Total holdings: <b>${fmt(holdingsValue())}${PT}</b> <span class="usd">${usd(holdingsValue())}</span> · valuations move daily.</p>`;
 }
 const pc=(a,b)=>b?(a>=0?'+':'')+(a*100/b).toFixed(2)+'%':'-';
 const KL={dep:'Added',wd:'Collected',buy:'Buy',sell:'Sell',pay:'Practice score'};
 function renderAcct(){
   const p=pnl(), cls=p.total>=0?'up':'down', sg=x=>(x>=0?'+':'')+fmt(x);
   $('#pnl').innerHTML=`<div class="pbig ${cls}">${sg(p.total)}${PT} <span>${pc(p.total,p.contrib)}</span></div>
-   <div class="kv"><div><small>realised</small><b class="${p.real>=0?'up':'down'}">${sg(p.real)}</b></div><div><small>unrealised</small><b class="${p.unreal>=0?'up':'down'}">${sg(p.unreal)}</b></div><div><small>holdings</small><b>${fmt(holdingsValue())}${PT}</b></div></div>
-   <div class="kv"><div><small>practice credits</small><b>${fmt(S.cash)}${PT}</b></div><div><small>Practice wallet</small><b>${fmt(S.wallet)}${PT}</b></div><div><small>added practice credits</small><b>${fmt(S.dep)}${PT}</b></div></div>
+   <div class="kv"><div><small>realised</small><b class="${p.real>=0?'up':'down'}">${sg(p.real)}</b></div><div><small>unrealised</small><b class="${p.unreal>=0?'up':'down'}">${sg(p.unreal)}</b></div><div><small>holdings</small><b>${fmt(holdingsValue())}${PT}</b>${U(holdingsValue())}</div></div>
+   <div class="kv"><div><small>practice credits</small><b>${fmt(S.cash)}${PT}</b>${U(S.cash)}</div><div><small>Practice wallet</small><b>${fmt(S.wallet)}${PT}</b>${U(S.wallet)}</div><div><small>added practice credits</small><b>${fmt(S.dep)}${PT}</b>${U(S.dep)}</div></div>
    <p class="tiny muted">Practice score = (credits + shares value + Practice wallet) − (starting credits + added practice credits). Realised = closed sells and collected practice scores; unrealised = open shares at today's practice value.</p>`;
   const ids=[...new Set(S.lots.map(l=>l.id))];
   $('#pnlHold').innerHTML=ids.length?'<table><tr><th>Holding</th><th>Cost</th><th>Value</th><th>Score</th></tr>'+ids.map(id=>{const c=costBasis(id),v=held(id)*value(BYID[id],today());
-    return `<tr><td>${esc(BYID[id].name)}</td><td>${fmt(c)}${PT}</td><td>${fmt(v)}${PT}</td><td class="${v>=c?'up':'down'}">${v>=c?'+':''}${fmt(v-c)} <span class="tiny">${pc(v-c,c)}</span></td></tr>`}).join('')+'</table>':'<p class="tiny muted">No open holdings, so no unrealised practice score.</p>';
+    return `<tr><td>${esc(BYID[id].name)}</td><td>${fmt(c)}${PT}${U(c)}</td><td>${fmt(v)}${PT}${U(v)}</td><td class="${v>=c?'up':'down'}">${v>=c?'+':''}${fmt(v-c)} <span class="tiny">${pc(v-c,c)}</span></td></tr>`}).join('')+'</table>':'<p class="tiny muted">No open holdings, so no unrealised practice score.</p>';
 }
 function renderHist(){
   const f=$('#hFilter').value, rows=S.hist.filter(h=>!f||(h.k||kindOf(h.t))===f);
   if(!rows.length){$('#hist').innerHTML='<p class="tiny muted">No transactions here yet.</p>';return}
   $('#hist').innerHTML='<table><tr><th>Date</th><th>Type</th><th>What</th><th>Amount</th></tr>'+rows.slice(0,120).map(h=>
-    `<tr><td class="rk">${new Date(h.d*864e5).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</td><td><span class="tag k-${h.k||kindOf(h.t)}">${KL[h.k||kindOf(h.t)]}</span></td><td>${esc(h.t)}</td><td class="${h.a>0?'up':h.a<0?'down':''}">${h.a>0?'+':''}${fmt(h.a)}${PT}</td></tr>`).join('')+'</table>';
+    `<tr><td class="rk">${new Date(h.d*864e5).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</td><td><span class="tag k-${h.k||kindOf(h.t)}">${KL[h.k||kindOf(h.t)]}</span></td><td>${esc(h.t)}</td><td class="${h.a>0?'up':h.a<0?'down':''}">${h.a>0?'+':''}${fmt(h.a)}${PT}${U(h.a)}</td></tr>`).join('')+'</table>';
 }
 function sheet(html){track.lastSheet=Date.now();const m=$('#modal');m.innerHTML=`<div class="sheet">${html}</div>`;m.hidden=false}
 function closeSheet(){$('#modal').hidden=true}
@@ -205,10 +205,10 @@ function qtySheet(b,mode){
   if(max<1){toast(mode==='buy'?'Your practice credits no reach o':'You have no shares to sell');return}
   sheet(`<h2>${mode==='buy'?'Own':'Sell'} shares</h2><p class="muted">${esc(b.name)} · ${fmt(v)} per share today</p>
   <div class="qty"><button data-q="-1">−</button><input id="q" type="number" min="1" max="${max}" value="1" inputmode="numeric"><button data-q="1">+</button></div>
-  <p>Total: <b id="tot">${fmt(v)}</b>${PT} <span class="tiny muted">(practice credits, max ${max})</span></p>
+  <p>Total: <b id="tot">${fmt(v)}</b>${PT} <span class="usd" id="totU">${usd(v)}</span> <span class="tiny muted">(practice credits, max ${max})</span></p>
   ${mode==='buy'?'<p class="tiny muted">Practice scores vary and nothing is guaranteed. Bad days can happen. Starts scoring tomorrow.</p>':''}
   <div class="row"><button class="btn ghost" data-close>Cancel</button><button class="btn" style="flex:1" data-confirm>${mode==='buy'?'Confirm':'Confirm sell'}</button></div>`);
-  const q=$('#q'), clamp=()=>{let n=parseInt(q.value,10);if(!Number.isInteger(n)||n<1)n=1;if(n>max)n=max;q.value=n;$('#tot').textContent=fmt(n*v);return n};
+  const q=$('#q'), clamp=()=>{let n=parseInt(q.value,10);if(!Number.isInteger(n)||n<1)n=1;if(n>max)n=max;q.value=n;$('#tot').textContent=fmt(n*v);$('#totU').textContent=usd(n*v);return n};
   q.oninput=clamp;
   $('#modal').onclick=e=>{
     if(e.target===$('#modal')||e.target.dataset.close!==undefined) return closeSheet();
@@ -230,7 +230,7 @@ function collect(){
   S.cash+=p.total; S.last=today(); S.cd=[...(S.cd||[]).filter(d=>d>today()-60),today()]; save();
   const btn=$('#collect'); btn.classList.remove('pop'); void btn.offsetWidth; btn.classList.add('pop'); if(p.total>0) burst(btn);
   render(); $('#share').hidden=false;
-  toast(p.total>0?`+${fmt(p.total)} collected. E don land.`:p.total<0?`Rough day: ${fmt(p.total)}. Business na so.`:'Nothing today. Tomorrow go better.');
+  toast(p.total>0?`+${fmt(p.total)} collected. Nice work.`:p.total<0?`Rough day: ${fmt(p.total)}. That is how business goes.`:'Nothing today. Try again tomorrow.');
 }
 function agg(rows){const m=new Map();for(const[id,a]of rows)m.set(id,(m.get(id)||0)+a);return m}
 
@@ -246,8 +246,8 @@ document.addEventListener('click',e=>{
 });
 $('#fToggle').onclick=()=>{$('#filters').hidden=!$('#filters').hidden};
 $('#collect').onclick=()=>{if(needAuth('Sign in to save your picks'))collect()};
-const DEP_CAP=N(20000000);
-function deposit(n){if(S.dep+n>DEP_CAP)return toast('Practice credit limit is ₦20,000,000');S.cash+=n;S.dep+=n;S.hist.unshift({d:today(),t:`Added · ${fmt(n)} practice credits (free, not real money)`,a:n,k:'dep'});save();render();toast(`+${fmt(n)} practice credits added`)}
+const DEP_CAP=N(5000000);
+function deposit(n){if(S.dep+n>DEP_CAP)return toast('Practice credit limit is ₦5,000,000');S.cash+=n;S.dep+=n;S.hist.unshift({d:today(),t:`Added · ${fmt(n)} practice credits (free, not real money)`,a:n,k:'dep'});save();render();toast(`+${fmt(n)} practice credits added`)}
 function withdraw(n){if(!(n>0))return toast('Enter an amount');if(n>S.cash)return toast('Not enough practice credits');S.cash-=n;S.wallet+=n;S.wd+=n;S.hist.unshift({d:today(),t:`Collected · ${fmt(n)} to Practice wallet`,a:-n,k:'wd'});save();render();toast(`${fmt(n)} collected to Practice wallet`)}
 document.addEventListener('click',e=>{const d=e.target.closest('[data-dep]'),w0=e.target.closest('[data-wd]');if((d||w0)&&!needAuth('Sign in to add practice credits'))return;if(d)deposit(N(+d.dataset.dep));const w=e.target.closest('[data-wd]');if(w)withdraw(w.dataset.wd==='all'?S.cash:N(+w.dataset.wd))});
 $('#wdForm').onsubmit=e=>{e.preventDefault();const v=Math.round(parseFloat($('#wdAmt').value)*100);withdraw(v);$('#wdAmt').value=''};
@@ -473,4 +473,4 @@ async function renderAdmin(){
 
 // ---- Privacy sheet (intro link) ----
 const PRIV_HTML='Kobo Share records your email and in-app activity to run and improve Kobo Share. Never sold. Handled in line with the NDPA 2023. To delete your data or get support, message <a href="https://x.com/0xarewah" target="_blank" rel="noopener">X @0xarewah</a> or <a href="https://t.me/Oxarewah" target="_blank" rel="noopener">Telegram @Oxarewah</a>.';
-document.getElementById('gPriv').onclick=e=>{e.preventDefault();sheet(`<h2>Privacy</h2><p class="tiny muted">${PRIV_HTML}</p><p class="tiny muted">Practice game only. No real money is used, collected or paid. All businesses are fictional examples. Not an investment, not an offer or solicitation, and not registered with the SEC Nigeria.</p><p class="tiny"><a href="privacy.html" target="_blank">Privacy Policy</a> · <a href="terms.html" target="_blank">Terms of Use</a></p><div class="row"><button class="btn" style="flex:1" data-close>Close</button></div>`);$('#modal').onclick=ev=>{if(ev.target===$('#modal')||ev.target.dataset.close!==undefined)closeSheet()}};
+document.getElementById('gPriv').onclick=e=>{e.preventDefault();sheet(`<h2>Privacy</h2><p class="tiny muted">${PRIV_HTML}</p><p class="tiny muted">Practice game only. No real money is used, collected or paid. All businesses are fictional examples. Not an investment, not an offer or solicitation, and not registered with any securities regulator.</p><p class="tiny"><a href="privacy.html" target="_blank">Privacy Policy</a> · <a href="terms.html" target="_blank">Terms of Use</a></p><div class="row"><button class="btn" style="flex:1" data-close>Close</button></div>`);$('#modal').onclick=ev=>{if(ev.target===$('#modal')||ev.target.dataset.close!==undefined)closeSheet()}};
